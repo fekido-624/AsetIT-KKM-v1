@@ -1,0 +1,43 @@
+-- CreateTable
+CREATE TABLE "Staff" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "Bil" INTEGER NOT NULL,
+    "Nama" TEXT NOT NULL,
+    "Jawatan" TEXT NOT NULL,
+    "Gred" TEXT NOT NULL,
+    "Emel" TEXT NOT NULL,
+    "Cawangan" TEXT NOT NULL,
+    "Wing" TEXT NOT NULL,
+    "StatusPerjawatan" TEXT NOT NULL,
+    "Avatar" TEXT NOT NULL,
+    "PC_Bilangan" TEXT NOT NULL,
+    "PC_JenisPerolehan" TEXT NOT NULL,
+    "PC_NamaProjek" TEXT NOT NULL,
+    "PC_TahunPerolehan" TEXT NOT NULL,
+    "PC_NoPendaftaran" TEXT NOT NULL,
+    "PC_KodSewaan" TEXT NOT NULL,
+    "PC_NoSiri" TEXT NOT NULL,
+    "PC_Catatan" TEXT NOT NULL,
+    "NB_Bilangan" TEXT NOT NULL,
+    "NB_JenisPerolehan" TEXT NOT NULL,
+    "NB_NamaProjek" TEXT NOT NULL,
+    "NB_TahunPerolehan" TEXT NOT NULL,
+    "NB_NoPendaftaran" TEXT NOT NULL,
+    "NB_KodSewaan" TEXT NOT NULL,
+    "NB_NoSiri" TEXT NOT NULL,
+    "NB_Catatan" TEXT NOT NULL,
+    "Printer_Bilangan" TEXT NOT NULL,
+    "Printer_JenisPerolehan" TEXT NOT NULL,
+    "Printer_NamaProjek" TEXT NOT NULL,
+    "Printer_TahunPerolehan" TEXT NOT NULL,
+    "Printer_NoPendaftaran" TEXT NOT NULL,
+    "Printer_KodSewaan" TEXT NOT NULL,
+    "Printer_NoSiri" TEXT NOT NULL,
+    "Printer_Jenama" TEXT NOT NULL,
+    "Printer_Jenis" TEXT NOT NULL,
+    "Printer_KodInk" TEXT NOT NULL,
+    "Printer_Catatan" TEXT NOT NULL
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Staff_Emel_key" ON "Staff"("Emel");

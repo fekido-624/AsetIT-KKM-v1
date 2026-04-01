@@ -1,0 +1,60 @@
+// Prisma schema for SQLite database
+// Simpan dalam prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Staff {
+  id                Int      @id @default(autoincrement())
+  Bil               Int
+  Nama              String
+  Jawatan           String
+  Gred              String
+  Emel              String   @unique
+  Cawangan          String
+  Wing              String
+  StatusPerjawatan  String
+  Avatar            String
+  PC_Bilangan       String
+  PC_JenisPerolehan String
+  PC_NamaProjek     String
+  PC_TahunPerolehan String
+  PC_NoPendaftaran  String
+  PC_KodSewaan      String
+  PC_NoSiri         String
+  PC_Catatan        String
+  NB_Bilangan       String
+  NB_JenisPerolehan String
+  NB_NamaProjek     String
+  NB_TahunPerolehan String
+  NB_NoPendaftaran  String
+  NB_KodSewaan      String
+  NB_NoSiri         String
+  NB_Catatan        String
+  Printer_Bilangan  String
+  Printer_JenisPerolehan String
+  Printer_NamaProjek     String
+  Printer_TahunPerolehan String
+  Printer_NoPendaftaran  String
+  Printer_KodSewaan      String
+  Printer_NoSiri         String
+  Printer_Jenama         String
+  Printer_Jenis          String
+  Printer_KodInk         String
+  Printer_Catatan        String
+}

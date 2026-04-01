@@ -1,0 +1,267 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AuthGuard from '@/components/auth-guard';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, UserPlus } from 'lucide-react';
+
+type StaffFormData = {
+  Nama: string;
+  Jawatan: string;
+  Gred: string;
+  Emel: string;
+  Cawangan: string;
+  Wing: string;
+  StatusPerjawatan: string;
+  PC_Bilangan: string;
+  PC_JenisPerolehan: string;
+  PC_NamaProjek: string;
+  PC_TahunPerolehan: string;
+  PC_NoPendaftaran: string;
+  PC_KodSewaan: string;
+  PC_NoSiri: string;
+  PC_Catatan: string;
+  NB_Bilangan: string;
+  NB_JenisPerolehan: string;
+  NB_NamaProjek: string;
+  NB_TahunPerolehan: string;
+  NB_NoPendaftaran: string;
+  NB_KodSewaan: string;
+  NB_NoSiri: string;
+  NB_Catatan: string;
+  Printer_Bilangan: string;
+  Printer_JenisPerolehan: string;
+  Printer_NamaProjek: string;
+  Printer_TahunPerolehan: string;
+  Printer_NoPendaftaran: string;
+  Printer_KodSewaan: string;
+  Printer_NoSiri: string;
+  Printer_Jenama: string;
+  Printer_Jenis: string;
+  Printer_KodInk: string;
+  Printer_Catatan: string;
+};
+
+const initialData: StaffFormData = {
+  Nama: '',
+  Jawatan: '',
+  Gred: '',
+  Emel: '',
+  Cawangan: '',
+  Wing: 'Wing 1',
+  StatusPerjawatan: 'Tetap',
+  PC_Bilangan: '',
+  PC_JenisPerolehan: '',
+  PC_NamaProjek: '',
+  PC_TahunPerolehan: '',
+  PC_NoPendaftaran: '',
+  PC_KodSewaan: '',
+  PC_NoSiri: '',
+  PC_Catatan: '',
+  NB_Bilangan: '',
+  NB_JenisPerolehan: '',
+  NB_NamaProjek: '',
+  NB_TahunPerolehan: '',
+  NB_NoPendaftaran: '',
+  NB_KodSewaan: '',
+  NB_NoSiri: '',
+  NB_Catatan: '',
+  Printer_Bilangan: '',
+  Printer_JenisPerolehan: '',
+  Printer_NamaProjek: '',
+  Printer_TahunPerolehan: '',
+  Printer_NoPendaftaran: '',
+  Printer_KodSewaan: '',
+  Printer_NoSiri: '',
+  Printer_Jenama: '',
+  Printer_Jenis: '',
+  Printer_KodInk: '',
+  Printer_Catatan: '',
+};
+
+export default function AddStaffPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState<StaffFormData>(initialData);
+
+  const setField = (key: keyof StaffFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!form.Nama || !form.Jawatan || !form.Gred || !form.Emel || !form.Cawangan || !form.Wing || !form.StatusPerjawatan) {
+      toast({
+        variant: 'destructive',
+        title: 'Data tidak lengkap',
+        description: 'Sila isi semua medan wajib profil staf.',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(String(body?.message || 'Gagal tambah staf'));
+      }
+
+      toast({
+        title: body?.result === 'updated' ? 'Staff dikemaskini' : 'Staff berjaya ditambah',
+        description: `${form.Nama} telah disimpan dalam database.`,
+      });
+      setForm(initialData);
+      router.push('/dashboard');
+      router.refresh();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Ralat simpan data',
+        description: (error as Error).message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderInput = (key: keyof StaffFormData, label: string, placeholder?: string) => (
+    <div className="space-y-2">
+      <Label htmlFor={key}>{label}</Label>
+      <Input
+        id={key}
+        value={form[key]}
+        onChange={(e) => setField(key, e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+
+  return (
+    <AuthGuard allowedRoles={['admin']}>
+    <main className="p-4 sm:p-6 md:p-8">
+      <Card className="max-w-6xl mx-auto">
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <UserPlus className="w-8 h-8 text-primary" />
+            <CardTitle className="text-3xl font-headline">Tambah Staff (Database Form)</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {renderInput('Nama', 'Nama *', 'Contoh: Ali Bin Abu')}
+              {renderInput('Jawatan', 'Jawatan *', 'Contoh: Pegawai Teknologi Makanan')}
+              {renderInput('Gred', 'Gred *', 'Contoh: C12')}
+              {renderInput('Emel', 'Emel *', 'Contoh: ali.abu@email.com')}
+              {renderInput('Cawangan', 'Cawangan / Bahagian / Unit *')}
+
+              <div className="space-y-2">
+                <Label>Wing *</Label>
+                <Select value={form.Wing} onValueChange={(value) => setField('Wing', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Wing" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Wing 1">Wing 1</SelectItem>
+                    <SelectItem value="Wing 2">Wing 2</SelectItem>
+                    <SelectItem value="Wing 3">Wing 3</SelectItem>
+                    <SelectItem value="Wing 4">Wing 4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status Perjawatan *</Label>
+                <Select value={form.StatusPerjawatan} onValueChange={(value) => setField('StatusPerjawatan', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tetap">Tetap</SelectItem>
+                    <SelectItem value="Kontrak">Kontrak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Entiti PC</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {renderInput('PC_Bilangan', 'Bilangan PC')}
+                {renderInput('PC_JenisPerolehan', 'Jenis Perolehan (PC)')}
+                {renderInput('PC_NamaProjek', 'Nama Projek (PC)')}
+                {renderInput('PC_TahunPerolehan', 'Tahun Perolehan (PC)')}
+                {renderInput('PC_NoPendaftaran', 'No Pendaftaran (Kew PA) PC')}
+                {renderInput('PC_KodSewaan', 'Kod Sewaan / Peyelenggaraan (PC)')}
+                {renderInput('PC_NoSiri', 'No. Siri PC')}
+                {renderInput('PC_Catatan', 'Catatan (PC)')}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Entiti NB</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {renderInput('NB_Bilangan', 'Bilangan NB')}
+                {renderInput('NB_JenisPerolehan', 'Jenis Perolehan (NB)')}
+                {renderInput('NB_NamaProjek', 'Nama Projek (NB)')}
+                {renderInput('NB_TahunPerolehan', 'Tahun Perolehan (NB)')}
+                {renderInput('NB_NoPendaftaran', 'No Pendaftaran (Kew PA) NB')}
+                {renderInput('NB_KodSewaan', 'Kod Sewaan / Peyelenggaraan (NB)')}
+                {renderInput('NB_NoSiri', 'No. Siri NB')}
+                {renderInput('NB_Catatan', 'Catatan (NB)')}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Entiti Printer</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {renderInput('Printer_Bilangan', 'Bilangan Printer')}
+                {renderInput('Printer_JenisPerolehan', 'Jenis Perolehan (Printer)')}
+                {renderInput('Printer_NamaProjek', 'Nama Projek (Printer)')}
+                {renderInput('Printer_TahunPerolehan', 'Tahun Perolehan (Printer)')}
+                {renderInput('Printer_NoPendaftaran', 'No Pendaftaran (Kew PA) Printer')}
+                {renderInput('Printer_KodSewaan', 'Kod Sewaan / Peyelenggaraan (Printer)')}
+                {renderInput('Printer_NoSiri', 'No. Siri Printer')}
+                {renderInput('Printer_Jenama', 'Jenama (Printer)')}
+                {renderInput('Printer_Jenis', 'Jenis (Printer)')}
+                {renderInput('Printer_KodInk', 'Kod Ink / Toner')}
+                {renderInput('Printer_Catatan', 'Catatan (Printer)')}
+              </CardContent>
+            </Card>
+
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isSubmitting ? 'Menyimpan...' : 'Simpan Staff'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </main>
+    </AuthGuard>
+  );
+}

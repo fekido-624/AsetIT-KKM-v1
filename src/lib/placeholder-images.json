@@ -1,0 +1,40 @@
+{
+  "placeholderImages": [
+    {
+      "id": "avatar1",
+      "description": "Avatar for Dr. Ahmad bin Kassim",
+      "imageUrl": "https://picsum.photos/seed/1/200/200",
+      "imageHint": "male portrait"
+    },
+    {
+      "id": "avatar2",
+      "description": "Avatar for Siti Nurhaliza binti Ishak",
+      "imageUrl": "https://picsum.photos/seed/2/200/200",
+      "imageHint": "female portrait"
+    },
+    {
+      "id": "avatar3",
+      "description": "Avatar for Lim Wei Kiat",
+      "imageUrl": "https://picsum.photos/seed/3/200/200",
+      "imageHint": "male portrait"
+    },
+    {
+      "id": "avatar4",
+      "description": "Avatar for Priya a/p Ramasamy",
+      "imageUrl": "https://picsum.photos/seed/4/200/200",
+      "imageHint": "female portrait"
+    },
+    {
+      "id": "avatar5",
+      "description": "Avatar for Muhammad Zikri bin Azman",
+      "imageUrl": "https://picsum.photos/seed/5/200/200",
+      "imageHint": "male portrait"
+    },
+    {
+      "id": "avatar6",
+      "description": "Avatar for Dr. Tan Siew Lee",
+      "imageUrl": "https://picsum.photos/seed/6/200/200",
+      "imageHint": "female portrait"
+    }
+  ]
+}
