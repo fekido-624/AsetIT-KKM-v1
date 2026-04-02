@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getStaffByWing } from "@/lib/data";
 import { StaffList } from "@/components/staff-list";
 import {

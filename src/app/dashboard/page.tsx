@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getAllStaffForUi } from "@/lib/staff-db";
 import { StaffList } from "@/components/staff-list";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getStaffByEmailForUi } from "@/lib/staff-db";
 import { StaffDetailClient } from "@/components/staff-detail-client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
