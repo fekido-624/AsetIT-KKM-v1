@@ -74,6 +74,7 @@ export function StaffDetailClient({ initialStaff }: StaffDetailClientProps) {
         description: `${assetType} details for ${staff.Nama} have been saved.`,
       });
       setIsEditing(null);
+      router.refresh();
     } catch (error) {
       toast({
         variant: 'destructive',
