@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getStaffByWingsForUi } from "@/lib/staff-db";
 import { StaffList } from "@/components/staff-list";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
