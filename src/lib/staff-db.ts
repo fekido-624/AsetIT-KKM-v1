@@ -3,7 +3,49 @@ import type { Staff } from '@/lib/types';
 import type { Staff as PrismaStaff } from '@prisma/client';
 import { sortStaffByGradeDesc } from '@/lib/grade-order';
 
-function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'>) {
+type LegacyFlatStaffInput = {
+  Nama: string;
+  Jawatan: string;
+  Gred: string;
+  Emel: string;
+  Cawangan: string;
+  Wing: string;
+  StatusPerjawatan: string;
+  PC_Bilangan?: string;
+  PC_JenisPerolehan?: string;
+  PC_NamaProjek?: string;
+  PC_TahunPerolehan?: string;
+  PC_NoPendaftaran?: string;
+  PC_KodSewaan?: string;
+  PC_NoSiri?: string;
+  PC_Catatan?: string;
+  NB_Bilangan?: string;
+  NB_JenisPerolehan?: string;
+  NB_NamaProjek?: string;
+  NB_TahunPerolehan?: string;
+  NB_NoPendaftaran?: string;
+  NB_KodSewaan?: string;
+  NB_NoSiri?: string;
+  NB_Catatan?: string;
+  Printer_Bilangan?: string;
+  Printer_JenisPerolehan?: string;
+  Printer_NamaProjek?: string;
+  Printer_TahunPerolehan?: string;
+  Printer_NoPendaftaran?: string;
+  Printer_KodSewaan?: string;
+  Printer_NoSiri?: string;
+  Printer_Jenama?: string;
+  Printer_Jenis?: string;
+  Printer_KodInk?: string;
+  Printer_Catatan?: string;
+};
+
+function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInput) {
+  const pc = 'PC' in data ? data.PC : undefined;
+  const nb = 'NB' in data ? data.NB : undefined;
+  const printer = 'Printer' in data ? data.Printer : undefined;
+  const flat = data as LegacyFlatStaffInput;
+
   return {
     Nama: data.Nama,
     Jawatan: data.Jawatan,
@@ -12,33 +54,33 @@ function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'>) {
     Cawangan: data.Cawangan,
     Wing: data.Wing,
     StatusPerjawatan: data.StatusPerjawatan,
-    PC_Bilangan: data.PC.Bilangan,
-    PC_JenisPerolehan: data.PC.JenisPerolehan,
-    PC_NamaProjek: data.PC.NamaProjek,
-    PC_TahunPerolehan: data.PC.TahunPerolehan,
-    PC_NoPendaftaran: data.PC.NoPendaftaran,
-    PC_KodSewaan: data.PC.KodSewaan,
-    PC_NoSiri: data.PC.NoSiri,
-    PC_Catatan: data.PC.Catatan,
-    NB_Bilangan: data.NB.Bilangan,
-    NB_JenisPerolehan: data.NB.JenisPerolehan,
-    NB_NamaProjek: data.NB.NamaProjek,
-    NB_TahunPerolehan: data.NB.TahunPerolehan,
-    NB_NoPendaftaran: data.NB.NoPendaftaran,
-    NB_KodSewaan: data.NB.KodSewaan,
-    NB_NoSiri: data.NB.NoSiri,
-    NB_Catatan: data.NB.Catatan,
-    Printer_Bilangan: data.Printer.Bilangan,
-    Printer_JenisPerolehan: data.Printer.JenisPerolehan,
-    Printer_NamaProjek: data.Printer.NamaProjek,
-    Printer_TahunPerolehan: data.Printer.TahunPerolehan,
-    Printer_NoPendaftaran: data.Printer.NoPendaftaran,
-    Printer_KodSewaan: data.Printer.KodSewaan,
-    Printer_NoSiri: data.Printer.NoSiri,
-    Printer_Jenama: data.Printer.Jenama,
-    Printer_Jenis: data.Printer.Jenis,
-    Printer_KodInk: data.Printer.KodInk,
-    Printer_Catatan: data.Printer.Catatan,
+    PC_Bilangan: pc?.Bilangan ?? flat.PC_Bilangan ?? '',
+    PC_JenisPerolehan: pc?.JenisPerolehan ?? flat.PC_JenisPerolehan ?? '',
+    PC_NamaProjek: pc?.NamaProjek ?? flat.PC_NamaProjek ?? '',
+    PC_TahunPerolehan: pc?.TahunPerolehan ?? flat.PC_TahunPerolehan ?? '',
+    PC_NoPendaftaran: pc?.NoPendaftaran ?? flat.PC_NoPendaftaran ?? '',
+    PC_KodSewaan: pc?.KodSewaan ?? flat.PC_KodSewaan ?? '',
+    PC_NoSiri: pc?.NoSiri ?? flat.PC_NoSiri ?? '',
+    PC_Catatan: pc?.Catatan ?? flat.PC_Catatan ?? '',
+    NB_Bilangan: nb?.Bilangan ?? flat.NB_Bilangan ?? '',
+    NB_JenisPerolehan: nb?.JenisPerolehan ?? flat.NB_JenisPerolehan ?? '',
+    NB_NamaProjek: nb?.NamaProjek ?? flat.NB_NamaProjek ?? '',
+    NB_TahunPerolehan: nb?.TahunPerolehan ?? flat.NB_TahunPerolehan ?? '',
+    NB_NoPendaftaran: nb?.NoPendaftaran ?? flat.NB_NoPendaftaran ?? '',
+    NB_KodSewaan: nb?.KodSewaan ?? flat.NB_KodSewaan ?? '',
+    NB_NoSiri: nb?.NoSiri ?? flat.NB_NoSiri ?? '',
+    NB_Catatan: nb?.Catatan ?? flat.NB_Catatan ?? '',
+    Printer_Bilangan: printer?.Bilangan ?? flat.Printer_Bilangan ?? '',
+    Printer_JenisPerolehan: printer?.JenisPerolehan ?? flat.Printer_JenisPerolehan ?? '',
+    Printer_NamaProjek: printer?.NamaProjek ?? flat.Printer_NamaProjek ?? '',
+    Printer_TahunPerolehan: printer?.TahunPerolehan ?? flat.Printer_TahunPerolehan ?? '',
+    Printer_NoPendaftaran: printer?.NoPendaftaran ?? flat.Printer_NoPendaftaran ?? '',
+    Printer_KodSewaan: printer?.KodSewaan ?? flat.Printer_KodSewaan ?? '',
+    Printer_NoSiri: printer?.NoSiri ?? flat.Printer_NoSiri ?? '',
+    Printer_Jenama: printer?.Jenama ?? flat.Printer_Jenama ?? '',
+    Printer_Jenis: printer?.Jenis ?? flat.Printer_Jenis ?? '',
+    Printer_KodInk: printer?.KodInk ?? flat.Printer_KodInk ?? '',
+    Printer_Catatan: printer?.Catatan ?? flat.Printer_Catatan ?? '',
   };
 }
 
@@ -119,7 +161,7 @@ export async function getStaffByEmailForUi(email: string): Promise<Staff | null>
   return row ? toUiStaff(row) : null;
 }
 
-export async function addOrUpdateStaff(data: Omit<Staff, 'Bil' | 'Avatar'>) {
+export async function addOrUpdateStaff(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInput) {
   const dbData = toDbStaffData(data);
 
   // Try update first

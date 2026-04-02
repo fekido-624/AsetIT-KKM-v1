@@ -124,12 +124,13 @@ export default function BulkUploadPage() {
           if (res.ok) {
             successCount++;
           } else {
+            const body = await res.json().catch(() => ({}));
             errorCount++;
-            errors.push(`Row ${i + 1}: ${res.statusText}`);
+            errors.push(`Row ${i + 1}: ${String(body?.message || res.statusText || 'Request failed')}`);
           }
         } catch (err) {
           errorCount++;
-          errors.push(`Row ${i + 1}: Network error`);
+          errors.push(`Row ${i + 1}: ${(err as Error).message || 'Network error'}`);
         }
       }
       setIsUploading(false);
