@@ -18,18 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { Loader2, UserPlus } from 'lucide-react';
 
-const JAWATAN_OPTIONS = ['Pegawai Teknologi Makanan', 'MyStep'];
-
-function getJawatanSelectValue(value: string): string {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) {
-    return '';
-  }
-
-  const matched = JAWATAN_OPTIONS.find((option) => option.toLowerCase() === normalized);
-  return matched || 'custom';
-}
-
 type StaffFormData = {
   Nama: string;
   Jawatan: string;
@@ -219,54 +207,6 @@ export default function AddStaffPage() {
     );
   };
 
-  const renderJawatanField = () => {
-    const currentValue = form.Jawatan;
-    const selectValue = getJawatanSelectValue(currentValue);
-
-    return (
-      <div className="space-y-2">
-        <Label>Jawatan *</Label>
-        <Select
-          value={selectValue}
-          onValueChange={(value) => {
-            if (value === 'custom') {
-              if (selectValue !== 'custom') {
-                setField('Jawatan', '');
-              }
-              return;
-            }
-            setField('Jawatan', value);
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih jawatan" />
-          </SelectTrigger>
-          <SelectContent>
-            {JAWATAN_OPTIONS.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-            <SelectItem value="custom">Lain-lain (isi sendiri)</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {selectValue === 'custom' ? (
-          <div className="flex gap-2">
-            <Input
-              value={currentValue}
-              onChange={(e) => setField('Jawatan', e.target.value)}
-              placeholder="Contoh: Pegawai Teknologi Makanan"
-            />
-            <Button type="button" variant="outline" onClick={() => setField('Jawatan', '')}>
-              Padam
-            </Button>
-          </div>
-        ) : null}
-      </div>
-    );
-  };
-
   return (
     <AuthGuard allowedRoles={['admin']}>
     <main className="p-4 sm:p-6 md:p-8">
@@ -281,7 +221,7 @@ export default function AddStaffPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {renderInput('Nama', 'Nama *', 'Contoh: Ali Bin Abu')}
-              {renderJawatanField()}
+              {renderInput('Jawatan', 'Jawatan *', 'Contoh: Pegawai Teknologi Makanan')}
               {renderInput('Gred', 'Gred *', 'Contoh: C12')}
               {renderInput('Emel', 'Emel *', 'Contoh: ali.abu@email.com')}
               {renderInput('Cawangan', 'Cawangan / Bahagian / Unit *')}
@@ -310,6 +250,7 @@ export default function AddStaffPage() {
                   <SelectContent>
                     <SelectItem value="Tetap">Tetap</SelectItem>
                     <SelectItem value="Kontrak">Kontrak</SelectItem>
+                    <SelectItem value="MyStep">MyStep</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
