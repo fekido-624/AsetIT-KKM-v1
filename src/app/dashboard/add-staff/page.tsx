@@ -126,8 +126,17 @@ export default function AddStaffPage() {
         throw new Error(String(body?.message || 'Gagal tambah staf'));
       }
 
+      if (body?.result === 'updated') {
+        toast({
+          variant: 'destructive',
+          title: '⚠️ Emel sudah wujud!',
+          description: `Emel "${form.Emel}" dah ada dalam sistem. Data staf lama telah ditindih. Sila semak semula emel yang dimasukkan.`,
+        });
+        return;
+      }
+
       toast({
-        title: body?.result === 'updated' ? 'Staff dikemaskini' : 'Staff berjaya ditambah',
+        title: 'Staff berjaya ditambah',
         description: `${form.Nama} telah disimpan dalam database.`,
       });
       setForm(initialData);
