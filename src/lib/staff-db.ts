@@ -40,6 +40,48 @@ type LegacyFlatStaffInput = {
   Printer_Catatan?: string;
 };
 
+function normalizeWingLabel(value: string) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  const cleaned = raw.toLowerCase().replace(/\s+/g, ' ');
+  const digitMatch = cleaned.match(/([1-4])/);
+  if (digitMatch) {
+    return `Wing ${digitMatch[1]}`;
+  }
+
+  return raw;
+}
+
+function buildWingAliases(wings: string[]) {
+  const aliasSet = new Set<string>();
+
+  for (const wing of wings) {
+    const normalized = normalizeWingLabel(wing);
+    const digitMatch = normalized.match(/([1-4])/);
+
+    aliasSet.add(String(wing || '').trim());
+    aliasSet.add(normalized);
+
+    if (digitMatch) {
+      const n = digitMatch[1];
+      aliasSet.add(n);
+      aliasSet.add(`Wing ${n}`);
+      aliasSet.add(`Wing${n}`);
+      aliasSet.add(`wing ${n}`);
+      aliasSet.add(`wing${n}`);
+      aliasSet.add(`Wing ${n}(test)`);
+      aliasSet.add(`Wing${n}(test)`);
+      aliasSet.add(`wing ${n}(test)`);
+      aliasSet.add(`wing${n}(test)`);
+    }
+  }
+
+  return Array.from(aliasSet).filter(Boolean);
+}
+
 function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInput) {
   const pc = 'PC' in data ? data.PC : undefined;
   const nb = 'NB' in data ? data.NB : undefined;
@@ -52,7 +94,7 @@ function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInpu
     Gred: data.Gred,
     Emel: data.Emel,
     Cawangan: data.Cawangan,
-    Wing: data.Wing,
+    Wing: normalizeWingLabel(data.Wing),
     StatusPerjawatan: data.StatusPerjawatan,
     PC_Bilangan: pc?.Bilangan ?? flat.PC_Bilangan ?? '',
     PC_JenisPerolehan: pc?.JenisPerolehan ?? flat.PC_JenisPerolehan ?? '',
@@ -145,8 +187,9 @@ export async function getStaffByWing(wing: string) {
 }
 
 export async function getStaffByWingsForUi(wings: string[]): Promise<Staff[]> {
+  const wingAliases = buildWingAliases(wings);
   const rows = await prisma.staff.findMany({
-    where: { Wing: { in: wings } },
+    where: { Wing: { in: wingAliases } },
     orderBy: { Bil: 'asc' },
   });
   return sortStaffByGradeDesc(rows.map(toUiStaff));
