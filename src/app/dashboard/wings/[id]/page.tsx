@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { getStaffByWing } from "@/lib/data";
+import { getStaffByWingsForUi } from "@/lib/staff-db";
 import { StaffList } from "@/components/staff-list";
 import {
   Card,
@@ -16,8 +16,8 @@ interface WingPageProps {
   };
 }
 
-export default function WingPage({ params }: WingPageProps) {
-  const staffList = getStaffByWing(params.id);
+export default async function WingPage({ params }: WingPageProps) {
+  const staffList = await getStaffByWingsForUi([`Wing ${params.id}`]);
 
   return (
     <main className="p-4 sm:p-6 md:p-8">
