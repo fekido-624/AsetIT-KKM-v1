@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthGuard from '@/components/auth-guard';
 import { useToast } from '@/hooks/use-toast';
+import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { Loader2, UserPlus } from 'lucide-react';
 
 type StaffFormData = {
@@ -155,6 +156,57 @@ export default function AddStaffPage() {
     </div>
   );
 
+  const renderJenisPerolehanField = (
+    key: 'PC_JenisPerolehan' | 'NB_JenisPerolehan' | 'Printer_JenisPerolehan',
+    label: string,
+  ) => {
+    const currentValue = form[key];
+    const selectValue = getProcurementSelectValue(currentValue);
+
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <Select
+          value={selectValue}
+          onValueChange={(value) => {
+            if (value === 'custom') {
+              if (selectValue !== 'custom') {
+                setField(key, '');
+              }
+              return;
+            }
+            setField(key, value);
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih jenis perolehan" />
+          </SelectTrigger>
+          <SelectContent>
+            {PROCUREMENT_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+            <SelectItem value="custom">Custom (Sewaan Lain)</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {selectValue === 'custom' ? (
+          <div className="flex gap-2">
+            <Input
+              value={currentValue}
+              onChange={(e) => setField(key, e.target.value)}
+              placeholder="Contoh: Sewaan Projek XYZ"
+            />
+            <Button type="button" variant="outline" onClick={() => setField(key, '')}>
+              Padam
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <AuthGuard allowedRoles={['admin']}>
     <main className="p-4 sm:p-6 md:p-8">
@@ -209,7 +261,7 @@ export default function AddStaffPage() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('PC_Bilangan', 'Bilangan PC')}
-                {renderInput('PC_JenisPerolehan', 'Jenis Perolehan (PC)')}
+                {renderJenisPerolehanField('PC_JenisPerolehan', 'Jenis Perolehan (PC)')}
                 {renderInput('PC_NamaProjek', 'Nama Projek (PC)')}
                 {renderInput('PC_TahunPerolehan', 'Tahun Perolehan (PC)')}
                 {renderInput('PC_NoPendaftaran', 'No Pendaftaran (Kew PA) PC')}
@@ -225,7 +277,7 @@ export default function AddStaffPage() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('NB_Bilangan', 'Bilangan NB')}
-                {renderInput('NB_JenisPerolehan', 'Jenis Perolehan (NB)')}
+                {renderJenisPerolehanField('NB_JenisPerolehan', 'Jenis Perolehan (NB)')}
                 {renderInput('NB_NamaProjek', 'Nama Projek (NB)')}
                 {renderInput('NB_TahunPerolehan', 'Tahun Perolehan (NB)')}
                 {renderInput('NB_NoPendaftaran', 'No Pendaftaran (Kew PA) NB')}
@@ -241,7 +293,7 @@ export default function AddStaffPage() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('Printer_Bilangan', 'Bilangan Printer')}
-                {renderInput('Printer_JenisPerolehan', 'Jenis Perolehan (Printer)')}
+                {renderJenisPerolehanField('Printer_JenisPerolehan', 'Jenis Perolehan (Printer)')}
                 {renderInput('Printer_NamaProjek', 'Nama Projek (Printer)')}
                 {renderInput('Printer_TahunPerolehan', 'Tahun Perolehan (Printer)')}
                 {renderInput('Printer_NoPendaftaran', 'No Pendaftaran (Kew PA) Printer')}

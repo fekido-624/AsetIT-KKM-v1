@@ -2,9 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { mkdir, writeFile } from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 
 export const runtime = "nodejs";
+
+function getUploadDir() {
+  const fromEnv = String(process.env.STAFF_IMAGE_UPLOAD_DIR || '').trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  const cwdPublic = path.join(process.cwd(), "public", "staff-images");
+  if (existsSync(path.join(process.cwd(), "public"))) {
+    return cwdPublic;
+  }
+
+  // Fallback that commonly matches NAS/container mount layout.
+  return "/app/public/staff-images";
+}
 
 function requireAdmin(req: NextRequest) {
   const user = getSessionUser(req);
@@ -47,7 +63,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, "-");
     const fileName = `${safeEmail}-${Date.now()}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "staff-images");
+    const uploadDir = getUploadDir();
     const filePath = path.join(uploadDir, fileName);
     const avatarPath = `/staff-images/${fileName}`;
 

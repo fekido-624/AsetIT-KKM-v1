@@ -42,7 +42,7 @@ function evaluateAsset(asset: AssetLike): { exists: boolean; complete: boolean; 
     return { exists: true, complete: false, needsReview: true };
   }
 
-  if (jenis.includes("ASSET KERAJAAN")) {
+  if (jenis.includes("ASSET KERAJAAN") || jenis.includes("ASET KERAJAAN")) {
     return { exists: true, complete: hasReg, needsReview: !hasReg };
   }
 

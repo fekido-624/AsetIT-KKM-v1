@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useSessionUser } from '@/hooks/use-session-user';
+import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { AssetNoteAssistant } from '@/components/asset-note-assistant';
 import { Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Wand2, Pencil } from 'lucide-react';
 
@@ -264,7 +266,51 @@ export function StaffDetailClient({ initialStaff }: StaffDetailClientProps) {
             <div key={key} className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
               <Label htmlFor={`${assetType}-${key}`} className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').trim()}</Label>
               {isBeingEdited ? (
-                key === 'Catatan' ? (
+                key === 'JenisPerolehan' ? (
+                  <div className="md:col-span-2 space-y-2">
+                    <Select
+                      value={getProcurementSelectValue(value)}
+                      onValueChange={(next) => {
+                        if (next === 'custom') {
+                          if (getProcurementSelectValue(value) !== 'custom') {
+                            handleInputChange(assetType, key, '');
+                          }
+                          return;
+                        }
+                        handleInputChange(assetType, key, next);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih jenis perolehan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROCUREMENT_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Custom (Sewaan Lain)</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {getProcurementSelectValue(value) === 'custom' ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={value}
+                          onChange={(e) => handleInputChange(assetType, key, e.target.value)}
+                          placeholder="Contoh: Sewaan Projek XYZ"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleInputChange(assetType, key, '')}
+                        >
+                          Padam
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : key === 'Catatan' ? (
                   <div className="md:col-span-2 relative">
                     <Textarea
                       id={`${assetType}-${key}`}
