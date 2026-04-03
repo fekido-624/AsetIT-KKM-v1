@@ -56,8 +56,14 @@ export function StaffList({ staffList }: StaffListProps) {
         staff.Nama,
         staff.Emel,
         staff.PC?.NoSiri,
+        staff.PC?.NoPendaftaran,
+        staff.PC?.KodSewaan,
         staff.NB?.NoSiri,
+        staff.NB?.NoPendaftaran,
+        staff.NB?.KodSewaan,
         staff.Printer?.NoSiri,
+        staff.Printer?.NoPendaftaran,
+        staff.Printer?.KodSewaan,
       ]
         .filter(Boolean)
         .join(" ")
