@@ -14,6 +14,7 @@ import { getStaffAssetSummary } from "@/lib/asset-status";
 interface StaffCardProps {
     staff: Staff;
     highlightTerm?: string;
+    detailHref?: string;
 }
 
 function escapeRegExp(value: string): string {
@@ -35,9 +36,10 @@ function highlightText(text: string, query?: string) {
     ));
 }
 
-export function StaffCard({ staff, highlightTerm }: StaffCardProps) {
+export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) {
     const avatarSrc = resolveAvatarSrc(staff.Avatar);
     const summary = getStaffAssetSummary(staff);
+    const href = detailHref || `/dashboard/staff/${encodeURIComponent(staff.Emel)}`;
 
     return (
         <Card className="w-full transition-all hover:shadow-lg">
@@ -77,7 +79,7 @@ export function StaffCard({ staff, highlightTerm }: StaffCardProps) {
                     </div>
                 </div>
                  <Button asChild className="mt-4 w-full md:w-auto float-right">
-                    <Link href={`/dashboard/staff/${encodeURIComponent(staff.Emel)}`}>
+                    <Link href={href}>
                         View Details <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>
                 </Button>

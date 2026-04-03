@@ -16,17 +16,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useSessionUser } from '@/hooks/use-session-user';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { AssetNoteAssistant } from '@/components/asset-note-assistant';
-import { Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Wand2, Pencil } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Wand2, Pencil } from 'lucide-react';
 
 interface StaffDetailClientProps {
   initialStaff: Staff;
+  backHref?: string;
 }
 
 type EditableAsset = 'PC' | 'NB' | 'Printer';
 type NoteContextType = { asset: EditableAsset, note: string } | null;
 type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'Wing' | 'StatusPerjawatan'>;
 
-export function StaffDetailClient({ initialStaff }: StaffDetailClientProps) {
+export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: StaffDetailClientProps) {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff>(initialStaff);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -349,6 +350,10 @@ export function StaffDetailClient({ initialStaff }: StaffDetailClientProps) {
 
   return (
     <div className="space-y-8">
+      <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Senarai
+      </Button>
+
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start gap-6">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Staff } from "@/lib/types";
 import { StaffCard } from "./staff-card";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,70 @@ interface StaffListProps {
   staffList: Staff[];
 }
 
+const ALLOWED_STATUS_FILTERS = new Set(["all", "complete", "incomplete", "no-asset"]);
+
+function normalizeStatus(value: string | null): string {
+  const raw = String(value || "all").trim();
+  return ALLOWED_STATUS_FILTERS.has(raw) ? raw : "all";
+}
+
 export function StaffList({ staffList }: StaffListProps) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(() => String(searchParams.get("q") || ""));
+  const [statusFilter, setStatusFilter] = useState(() => normalizeStatus(searchParams.get("status")));
+
+  useEffect(() => {
+    setSearch(String(searchParams.get("q") || ""));
+    setStatusFilter(normalizeStatus(searchParams.get("status")));
+  }, [searchParams]);
+
+  const updateUrlState = (nextSearch: string, nextStatus: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const q = nextSearch.trim();
+
+    if (q) {
+      params.set("q", q);
+    } else {
+      params.delete("q");
+    }
+
+    if (nextStatus && nextStatus !== "all") {
+      params.set("status", nextStatus);
+    } else {
+      params.delete("status");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    updateUrlState(value, statusFilter);
+  };
+
+  const handleStatusChange = (value: string) => {
+    const nextStatus = normalizeStatus(value);
+    setStatusFilter(nextStatus);
+    updateUrlState(search, nextStatus);
+  };
+
+  const buildListPath = (nextSearch: string, nextStatus: string) => {
+    const params = new URLSearchParams();
+    const q = nextSearch.trim();
+    if (q) {
+      params.set("q", q);
+    }
+    if (nextStatus && nextStatus !== "all") {
+      params.set("status", nextStatus);
+    }
+
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  };
 
   const filteredStaff = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -67,11 +129,11 @@ export function StaffList({ staffList }: StaffListProps) {
         <div className="md:col-span-2">
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by Nama, Email, or No Siri (PC/NB/Printer)..."
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={handleStatusChange}>
           <SelectTrigger>
             <SelectValue placeholder="Filter status" />
           </SelectTrigger>
@@ -91,7 +153,14 @@ export function StaffList({ staffList }: StaffListProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStaff.map((staff) => (
-            <StaffCard key={staff.Emel} staff={staff} highlightTerm={search} />
+              <StaffCard
+                key={staff.Emel}
+                staff={staff}
+                highlightTerm={search}
+                detailHref={`/dashboard/staff/${encodeURIComponent(staff.Emel)}?back=${encodeURIComponent(
+                  buildListPath(search, statusFilter)
+                )}`}
+              />
           ))}
         </div>
       )}

@@ -15,10 +15,22 @@ interface StaffDetailPageProps {
   params: {
     email: string;
   };
+  searchParams?: {
+    back?: string;
+  };
 }
 
-export default async function StaffDetailPage({ params }: StaffDetailPageProps) {
+export default async function StaffDetailPage({ params, searchParams }: StaffDetailPageProps) {
   const staff = await getStaffByEmailForUi(decodeURIComponent(params.email));
+  const rawBack = String(searchParams?.back || '/dashboard');
+  const decodedBack = (() => {
+    try {
+      return decodeURIComponent(rawBack);
+    } catch {
+      return rawBack;
+    }
+  })();
+  const backHref = decodedBack.startsWith('/dashboard') ? decodedBack : '/dashboard';
 
   if (!staff) {
     return (
@@ -42,7 +54,7 @@ export default async function StaffDetailPage({ params }: StaffDetailPageProps) 
             </h1>
             <p className="text-muted-foreground mt-1">View and manage asset information for {staff.Nama}.</p>
         </div>
-        <StaffDetailClient initialStaff={staff} />
+        <StaffDetailClient initialStaff={staff} backHref={backHref} />
     </main>
   );
 }
