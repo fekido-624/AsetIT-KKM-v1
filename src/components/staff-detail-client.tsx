@@ -308,56 +308,58 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
                       const isCustomMode = catatanMode[assetType] || detectedCustom;
 
                       return (
-                    <Select
-                      value={isCustomMode ? 'CUSTOM' : getCatatanSelectValue(value)}
-                      onValueChange={(next) => {
-                        if (next === 'CUSTOM') {
-                          setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
-                          if (!isCustomMode) {
-                            handleInputChange(assetType, key, '');
-                          }
-                          return;
-                        }
+                        <>
+                          <Select
+                            value={isCustomMode ? 'CUSTOM' : getCatatanSelectValue(value)}
+                            onValueChange={(next) => {
+                              if (next === 'CUSTOM') {
+                                setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                                if (!isCustomMode) {
+                                  handleInputChange(assetType, key, '');
+                                }
+                                return;
+                              }
 
-                        setCatatanMode((prev) => ({ ...prev, [assetType]: false }));
-                        handleInputChange(assetType, key, next);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih catatan" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CATATAN_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="CUSTOM">CUSTOM TEXT</SelectItem>
-                      </SelectContent>
-                    </Select>
+                              setCatatanMode((prev) => ({ ...prev, [assetType]: false }));
+                              handleInputChange(assetType, key, next);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih catatan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CATATAN_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="CUSTOM">CUSTOM TEXT</SelectItem>
+                            </SelectContent>
+                          </Select>
 
-                    {isCustomMode ? (
-                      <div className="flex gap-2">
-                        <Input
-                          value={value}
-                          onChange={(e) => {
-                            setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
-                            handleInputChange(assetType, key, e.target.value);
-                          }}
-                          placeholder="Contoh: Done (asset rosak)"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
-                            handleInputChange(assetType, key, '');
-                          }}
-                        >
-                          Padam
-                        </Button>
-                      </div>
-                    ) : null}
+                          {isCustomMode ? (
+                            <div className="flex gap-2">
+                              <Input
+                                value={value}
+                                onChange={(e) => {
+                                  setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                                  handleInputChange(assetType, key, e.target.value);
+                                }}
+                                placeholder="Contoh: Done (asset rosak)"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                                  handleInputChange(assetType, key, '');
+                                }}
+                              >
+                                Padam
+                              </Button>
+                            </div>
+                          ) : null}
+                        </>
                       );
                     })()}
                   </div>
