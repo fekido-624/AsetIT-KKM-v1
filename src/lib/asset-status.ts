@@ -1,4 +1,5 @@
 import type { AssetNB, AssetPC, AssetPrinter, Staff } from "@/lib/types";
+import { isCatatanComplete } from "@/lib/catatan-options";
 
 type AssetLike = AssetPC | AssetNB | AssetPrinter;
 
@@ -36,7 +37,7 @@ function evaluateAsset(asset: AssetLike): { exists: boolean; complete: boolean; 
 
   const jenis = normalize(asset.JenisPerolehan).toUpperCase();
   const hasSerial = isFilled(asset.NoSiri);
-  const doneNote = normalize(asset.Catatan).toUpperCase().includes('DONE');
+  const doneNote = isCatatanComplete(asset.Catatan);
   const hasReg = isFilled(asset.NoPendaftaran);
   const hasRentCode = isFilled(asset.KodSewaan);
 

@@ -10,13 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useSessionUser } from '@/hooks/use-session-user';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
-import { AssetNoteAssistant } from '@/components/asset-note-assistant';
-import { ArrowLeft, Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Wand2, Pencil } from 'lucide-react';
+import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
+import { ArrowLeft, Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Pencil } from 'lucide-react';
 
 interface StaffDetailClientProps {
   initialStaff: Staff;
@@ -24,7 +23,6 @@ interface StaffDetailClientProps {
 }
 
 type EditableAsset = 'PC' | 'NB' | 'Printer';
-type NoteContextType = { asset: EditableAsset, note: string } | null;
 type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'Wing' | 'StatusPerjawatan'>;
 
 export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: StaffDetailClientProps) {
@@ -37,8 +35,6 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isDeletingStaff, setIsDeletingStaff] = useState(false);
   const [isEditing, setIsEditing] = useState<EditableAsset | null>(null);
-  const [isNoteAssistantOpen, setIsNoteAssistantOpen] = useState(false);
-  const [noteContext, setNoteContext] = useState<NoteContextType>(null);
   const { user } = useSessionUser();
   const canManageStaff = user?.role === 'admin';
   
@@ -84,18 +80,6 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       });
     }
   };
-
-  const handleOpenNoteAssistant = (asset: EditableAsset) => {
-    setNoteContext({ asset, note: staff[asset].Catatan });
-    setIsNoteAssistantOpen(true);
-  };
-
-  const handleNoteUpdateFromAssistant = (newNote: string) => {
-    if (noteContext) {
-      handleInputChange(noteContext.asset, 'Catatan', newNote);
-    }
-  };
-
 
   const avatarSrc = resolveAvatarSrc(staff.Avatar);
 
@@ -313,22 +297,49 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
                     ) : null}
                   </div>
                 ) : key === 'Catatan' ? (
-                  <div className="md:col-span-2 relative">
-                    <Textarea
-                      id={`${assetType}-${key}`}
-                      value={value}
-                      onChange={(e) => handleInputChange(assetType, key, e.target.value)}
-                      className="pr-10"
-                    />
-                    <Button 
-                      type="button"
-                      size="icon" 
-                      variant="ghost" 
-                      className="absolute top-2 right-2 h-7 w-7"
-                      onClick={() => handleOpenNoteAssistant(assetType)}
+                  <div className="md:col-span-2 space-y-2">
+                    <Select
+                      value={getCatatanSelectValue(value)}
+                      onValueChange={(next) => {
+                        if (next === 'CUSTOM') {
+                          if (getCatatanSelectValue(value) !== 'CUSTOM') {
+                            handleInputChange(assetType, key, '');
+                          }
+                          return;
+                        }
+
+                        handleInputChange(assetType, key, next);
+                      }}
                     >
-                      <Wand2 className="w-4 h-4 text-primary" />
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih catatan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATATAN_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="CUSTOM">CUSTOM TEXT</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {getCatatanSelectValue(value) === 'CUSTOM' ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={value}
+                          onChange={(e) => handleInputChange(assetType, key, e.target.value)}
+                          placeholder="Contoh: Done (asset rosak)"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleInputChange(assetType, key, '')}
+                        >
+                          Padam
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <Input
@@ -447,14 +458,6 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
         <TabsContent value="Printer">{renderAssetTab('Printer', <Printer />)}</TabsContent>
       </Tabs>
       
-      {isNoteAssistantOpen && noteContext && (
-        <AssetNoteAssistant
-          isOpen={isNoteAssistantOpen}
-          onClose={() => setIsNoteAssistantOpen(false)}
-          note={noteContext.note}
-          onNoteUpdate={handleNoteUpdateFromAssistant}
-        />
-      )}
     </div>
   );
 }

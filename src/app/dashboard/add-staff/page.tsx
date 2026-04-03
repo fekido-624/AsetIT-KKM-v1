@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthGuard from '@/components/auth-guard';
 import { useToast } from '@/hooks/use-toast';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
+import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
 import { Loader2, UserPlus } from 'lucide-react';
 
 type StaffFormData = {
@@ -216,6 +217,58 @@ export default function AddStaffPage() {
     );
   };
 
+  const renderCatatanField = (
+    key: 'PC_Catatan' | 'NB_Catatan' | 'Printer_Catatan',
+    label: string,
+  ) => {
+    const currentValue = form[key];
+    const selectValue = getCatatanSelectValue(currentValue);
+
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <Select
+          value={selectValue}
+          onValueChange={(value) => {
+            if (value === 'CUSTOM') {
+              if (selectValue !== 'CUSTOM') {
+                setField(key, '');
+              }
+              return;
+            }
+
+            setField(key, value);
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih catatan" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATATAN_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+            <SelectItem value="CUSTOM">CUSTOM TEXT</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {selectValue === 'CUSTOM' ? (
+          <div className="flex gap-2">
+            <Input
+              value={currentValue}
+              onChange={(e) => setField(key, e.target.value)}
+              placeholder="Contoh: Done (asset rosak)"
+            />
+            <Button type="button" variant="outline" onClick={() => setField(key, '')}>
+              Padam
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <AuthGuard allowedRoles={['admin']}>
     <main className="p-4 sm:p-6 md:p-8">
@@ -277,7 +330,7 @@ export default function AddStaffPage() {
                 {renderInput('PC_NoPendaftaran', 'No Pendaftaran (Kew PA) PC')}
                 {renderInput('PC_KodSewaan', 'Kod Sewaan / Peyelenggaraan (PC)')}
                 {renderInput('PC_NoSiri', 'No. Siri PC')}
-                {renderInput('PC_Catatan', 'Catatan (PC)')}
+                {renderCatatanField('PC_Catatan', 'Catatan (PC)')}
               </CardContent>
             </Card>
 
@@ -293,7 +346,7 @@ export default function AddStaffPage() {
                 {renderInput('NB_NoPendaftaran', 'No Pendaftaran (Kew PA) NB')}
                 {renderInput('NB_KodSewaan', 'Kod Sewaan / Peyelenggaraan (NB)')}
                 {renderInput('NB_NoSiri', 'No. Siri NB')}
-                {renderInput('NB_Catatan', 'Catatan (NB)')}
+                {renderCatatanField('NB_Catatan', 'Catatan (NB)')}
               </CardContent>
             </Card>
 
@@ -312,7 +365,7 @@ export default function AddStaffPage() {
                 {renderInput('Printer_Jenama', 'Jenama (Printer)')}
                 {renderInput('Printer_Jenis', 'Jenis (Printer)')}
                 {renderInput('Printer_KodInk', 'Kod Ink / Toner')}
-                {renderInput('Printer_Catatan', 'Catatan (Printer)')}
+                {renderCatatanField('Printer_Catatan', 'Catatan (Printer)')}
               </CardContent>
             </Card>
 
