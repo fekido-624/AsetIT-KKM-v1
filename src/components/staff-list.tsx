@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { Staff } from "@/lib/types";
 import { StaffCard } from "./staff-card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ function normalizeStatus(value: string | null): string {
 }
 
 export function StaffList({ staffList }: StaffListProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -31,37 +30,6 @@ export function StaffList({ staffList }: StaffListProps) {
     setSearch(String(searchParams.get("q") || ""));
     setStatusFilter(normalizeStatus(searchParams.get("status")));
   }, [searchParams]);
-
-  const updateUrlState = (nextSearch: string, nextStatus: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    const q = nextSearch.trim();
-
-    if (q) {
-      params.set("q", q);
-    } else {
-      params.delete("q");
-    }
-
-    if (nextStatus && nextStatus !== "all") {
-      params.set("status", nextStatus);
-    } else {
-      params.delete("status");
-    }
-
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    updateUrlState(value, statusFilter);
-  };
-
-  const handleStatusChange = (value: string) => {
-    const nextStatus = normalizeStatus(value);
-    setStatusFilter(nextStatus);
-    updateUrlState(search, nextStatus);
-  };
 
   const buildListPath = (nextSearch: string, nextStatus: string) => {
     const params = new URLSearchParams();
@@ -129,11 +97,11 @@ export function StaffList({ staffList }: StaffListProps) {
         <div className="md:col-span-2">
           <Input
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by Nama, Email, or No Siri (PC/NB/Printer)..."
           />
         </div>
-        <Select value={statusFilter} onValueChange={handleStatusChange}>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Filter status" />
           </SelectTrigger>
