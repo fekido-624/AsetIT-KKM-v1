@@ -1,5 +1,5 @@
 import type { AssetNB, AssetPC, AssetPrinter, Staff } from "@/lib/types";
-import { isCatatanComplete } from "@/lib/catatan-options";
+import { isCatatanComplete, isCatatanNoAsset } from "@/lib/catatan-options";
 
 type AssetLike = AssetPC | AssetNB | AssetPrinter;
 
@@ -30,6 +30,10 @@ function hasAnyCoreData(asset: AssetLike): boolean {
 }
 
 function evaluateAsset(asset: AssetLike): { exists: boolean; complete: boolean; needsReview: boolean } {
+  if (isCatatanNoAsset(asset.Catatan)) {
+    return { exists: false, complete: false, needsReview: false };
+  }
+
   const exists = hasAnyCoreData(asset);
   if (!exists) {
     return { exists: false, complete: false, needsReview: false };
