@@ -36,10 +36,15 @@ function evaluateAsset(asset: AssetLike): { exists: boolean; complete: boolean; 
 
   const jenis = normalize(asset.JenisPerolehan).toUpperCase();
   const hasSerial = isFilled(asset.NoSiri);
+  const doneNote = normalize(asset.Catatan).toUpperCase() === 'DONE';
   const hasReg = isFilled(asset.NoPendaftaran);
   const hasRentCode = isFilled(asset.KodSewaan);
 
   if (!hasSerial) {
+    return { exists: true, complete: false, needsReview: true };
+  }
+
+  if (!doneNote) {
     return { exists: true, complete: false, needsReview: true };
   }
 
