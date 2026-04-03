@@ -28,6 +28,11 @@ type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'W
 export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: StaffDetailClientProps) {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff>(initialStaff);
+  const [catatanMode, setCatatanMode] = useState<Record<EditableAsset, boolean>>({
+    PC: false,
+    NB: false,
+    Printer: false,
+  });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState<ProfileSnapshot | null>(null);
@@ -298,16 +303,23 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
                   </div>
                 ) : key === 'Catatan' ? (
                   <div className="md:col-span-2 space-y-2">
+                    {(() => {
+                      const detectedCustom = getCatatanSelectValue(value) === 'CUSTOM';
+                      const isCustomMode = catatanMode[assetType] || detectedCustom;
+
+                      return (
                     <Select
-                      value={getCatatanSelectValue(value)}
+                      value={isCustomMode ? 'CUSTOM' : getCatatanSelectValue(value)}
                       onValueChange={(next) => {
                         if (next === 'CUSTOM') {
-                          if (getCatatanSelectValue(value) !== 'CUSTOM') {
+                          setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                          if (!isCustomMode) {
                             handleInputChange(assetType, key, '');
                           }
                           return;
                         }
 
+                        setCatatanMode((prev) => ({ ...prev, [assetType]: false }));
                         handleInputChange(assetType, key, next);
                       }}
                     >
@@ -324,22 +336,30 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
                       </SelectContent>
                     </Select>
 
-                    {getCatatanSelectValue(value) === 'CUSTOM' ? (
+                    {isCustomMode ? (
                       <div className="flex gap-2">
                         <Input
                           value={value}
-                          onChange={(e) => handleInputChange(assetType, key, e.target.value)}
+                          onChange={(e) => {
+                            setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                            handleInputChange(assetType, key, e.target.value);
+                          }}
                           placeholder="Contoh: Done (asset rosak)"
                         />
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => handleInputChange(assetType, key, '')}
+                          onClick={() => {
+                            setCatatanMode((prev) => ({ ...prev, [assetType]: true }));
+                            handleInputChange(assetType, key, '');
+                          }}
                         >
                           Padam
                         </Button>
                       </div>
                     ) : null}
+                      );
+                    })()}
                   </div>
                 ) : (
                   <Input

@@ -98,6 +98,11 @@ export default function AddStaffPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<StaffFormData>(initialData);
+  const [catatanMode, setCatatanMode] = useState<Record<'PC_Catatan' | 'NB_Catatan' | 'Printer_Catatan', boolean>>({
+    PC_Catatan: false,
+    NB_Catatan: false,
+    Printer_Catatan: false,
+  });
 
   const setField = (key: keyof StaffFormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -222,7 +227,9 @@ export default function AddStaffPage() {
     label: string,
   ) => {
     const currentValue = form[key];
-    const selectValue = getCatatanSelectValue(currentValue);
+    const detectedCustom = getCatatanSelectValue(currentValue) === 'CUSTOM';
+    const isCustomMode = catatanMode[key] || detectedCustom;
+    const selectValue = isCustomMode ? 'CUSTOM' : getCatatanSelectValue(currentValue);
 
     return (
       <div className="space-y-2">
@@ -231,12 +238,14 @@ export default function AddStaffPage() {
           value={selectValue}
           onValueChange={(value) => {
             if (value === 'CUSTOM') {
-              if (selectValue !== 'CUSTOM') {
+              setCatatanMode((prev) => ({ ...prev, [key]: true }));
+              if (!isCustomMode) {
                 setField(key, '');
               }
               return;
             }
 
+            setCatatanMode((prev) => ({ ...prev, [key]: false }));
             setField(key, value);
           }}
         >
@@ -253,14 +262,24 @@ export default function AddStaffPage() {
           </SelectContent>
         </Select>
 
-        {selectValue === 'CUSTOM' ? (
+        {isCustomMode ? (
           <div className="flex gap-2">
             <Input
               value={currentValue}
-              onChange={(e) => setField(key, e.target.value)}
+              onChange={(e) => {
+                setCatatanMode((prev) => ({ ...prev, [key]: true }));
+                setField(key, e.target.value);
+              }}
               placeholder="Contoh: Done (asset rosak)"
             />
-            <Button type="button" variant="outline" onClick={() => setField(key, '')}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCatatanMode((prev) => ({ ...prev, [key]: true }));
+                setField(key, '');
+              }}
+            >
               Padam
             </Button>
           </div>
