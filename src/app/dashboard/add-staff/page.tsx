@@ -295,7 +295,7 @@ export default function AddStaffPage() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <UserPlus className="w-8 h-8 text-primary" />
-            <CardTitle className="text-3xl font-headline">Tambah Staff (Database Form)</CardTitle>
+            <CardTitle className="text-3xl font-headline">Tambah Kakitangan</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -339,7 +339,7 @@ export default function AddStaffPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Entiti PC</CardTitle>
+                <CardTitle>Maklumat PC Desktop</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('PC_Bilangan', 'Bilangan PC')}
@@ -355,7 +355,7 @@ export default function AddStaffPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Entiti NB</CardTitle>
+                <CardTitle>Maklumat Laptop (NB)</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('NB_Bilangan', 'Bilangan NB')}
@@ -371,7 +371,7 @@ export default function AddStaffPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Entiti Printer</CardTitle>
+                <CardTitle>Maklumat Printer</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {renderInput('Printer_Bilangan', 'Bilangan Printer')}
