@@ -17,6 +17,11 @@ interface StaffCardProps {
     detailHref?: string;
 }
 
+function hasMeaningfulNote(value: string | undefined): boolean {
+    const note = String(value || '').trim().toUpperCase();
+    return !['', 'N/A', 'NA', '-'].includes(note);
+}
+
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -40,6 +45,11 @@ export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) 
     const avatarSrc = resolveAvatarSrc(staff.Avatar);
     const summary = getStaffAssetSummary(staff);
     const href = detailHref || `/dashboard/staff/${encodeURIComponent(staff.Emel)}`;
+    const notes = [
+        { label: 'PC', value: staff.PC?.Catatan },
+        { label: 'NB', value: staff.NB?.Catatan },
+        { label: 'Printer', value: staff.Printer?.Catatan },
+    ].filter((item) => hasMeaningfulNote(item.value));
 
     return (
         <Card className="w-full transition-all hover:shadow-lg">
@@ -77,6 +87,15 @@ export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) 
                          <MapPin className="w-4 h-4"/>
                         <span>{highlightText(`${staff.Cawangan} - ${staff.Wing}`, highlightTerm)}</span>
                     </div>
+                    {notes.length > 0 ? (
+                        <div className="pt-1 text-xs">
+                            {notes.map((item) => (
+                                <p key={item.label} className="truncate" title={item.value}>
+                                    <span className="font-medium">{item.label}:</span> {item.value}
+                                </p>
+                            ))}
+                        </div>
+                    ) : null}
                 </div>
                  <Button asChild className="mt-4 w-full md:w-auto float-right">
                     <Link href={href}>
