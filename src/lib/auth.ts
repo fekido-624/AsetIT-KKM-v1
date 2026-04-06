@@ -3,7 +3,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { SessionUser, UserRole } from '@/lib/types';
 
-const SESSION_COOKIE = 'asetit_session';
+export const SESSION_COOKIE = 'asetit_session';
 const DEFAULT_ADMIN_USERNAME = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
 const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'Password123!';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'asetit-kkm-dev-secret';

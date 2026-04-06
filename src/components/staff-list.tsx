@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Staff } from "@/lib/types";
 import { StaffCard } from "./staff-card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getStaffAssetSummary } from "@/lib/asset-status";
@@ -13,6 +15,12 @@ interface StaffListProps {
 }
 
 const ALLOWED_STATUS_FILTERS = new Set(["all", "complete", "incomplete", "no-asset"]);
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "Semua",
+  complete: "Aset Lengkap",
+  incomplete: "Aset Tak Lengkap",
+  "no-asset": "Tiada Aset",
+};
 
 function normalizeStatus(value: string | null): string {
   const raw = String(value || "all").trim();
@@ -45,9 +53,9 @@ export function StaffList({ staffList }: StaffListProps) {
     return query ? `${pathname}?${query}` : pathname;
   };
 
-  const filteredStaff = useMemo(() => {
+  const keywordMatchedStaff = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    const byKeyword = staffList.filter((staff) => {
+    return staffList.filter((staff) => {
       if (!keyword) {
         return true;
       }
@@ -71,10 +79,12 @@ export function StaffList({ staffList }: StaffListProps) {
 
       return haystack.includes(keyword);
     });
+  }, [search, staffList]);
 
-    if (statusFilter === "all") return byKeyword;
+  const filteredStaff = useMemo(() => {
+    if (statusFilter === "all") return keywordMatchedStaff;
 
-    return byKeyword.filter((staff) => {
+    return keywordMatchedStaff.filter((staff) => {
       const summary = getStaffAssetSummary(staff);
       if (statusFilter === "complete") {
         return summary.totalExisting > 0 && summary.incompleteCount === 0;
@@ -87,7 +97,7 @@ export function StaffList({ staffList }: StaffListProps) {
       }
       return true;
     });
-  }, [search, staffList, statusFilter]);
+  }, [keywordMatchedStaff, statusFilter]);
 
   if (staffList.length === 0) {
     return (
@@ -99,26 +109,46 @@ export function StaffList({ staffList }: StaffListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="md:col-span-2">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by Nama, Email, or No Siri (PC/NB/Printer)..."
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua</SelectItem>
-            <SelectItem value="complete">Aset Lengkap</SelectItem>
-            <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
-            <SelectItem value="no-asset">Tiada Aset</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Card className="bg-card/80 backdrop-blur-sm">
+        <CardContent className="space-y-3 pt-6">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>Dipaparkan:</span>
+            <Badge variant="secondary" className="font-medium">
+              {filteredStaff.length} staf
+            </Badge>
+            {statusFilter !== "all" ? (
+              <>
+                <span>untuk filter</span>
+                <Badge variant="outline">{STATUS_FILTER_LABELS[statusFilter]}</Badge>
+                <span>(daripada {keywordMatchedStaff.length} hasil carian)</span>
+              </>
+            ) : (
+              <span>(semua rekod)</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by Nama, Email, or No Siri (PC/NB/Printer)..."
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="complete">Aset Lengkap</SelectItem>
+                <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
+                <SelectItem value="no-asset">Tiada Aset</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {filteredStaff.length === 0 ? (
         <div className="text-center text-muted-foreground py-16">
