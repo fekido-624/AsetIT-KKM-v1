@@ -126,7 +126,7 @@ function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInpu
   };
 }
 
-function toUiStaff(row: PrismaStaff): Staff {
+export function toUiStaff(row: PrismaStaff): Staff {
   return {
     Bil: row.Bil,
     Nama: row.Nama,

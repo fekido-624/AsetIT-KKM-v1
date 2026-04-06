@@ -31,8 +31,13 @@ export function StaffList({ staffList }: StaffListProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [search, setSearch] = useState(() => String(searchParams.get("q") || ""));
   const [statusFilter, setStatusFilter] = useState(() => normalizeStatus(searchParams.get("status")));
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     setSearch(String(searchParams.get("q") || ""));
@@ -135,17 +140,21 @@ export function StaffList({ staffList }: StaffListProps) {
                 placeholder="Search by Nama, Email, or No Siri (PC/NB/Printer)..."
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua</SelectItem>
-                <SelectItem value="complete">Aset Lengkap</SelectItem>
-                <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
-                <SelectItem value="no-asset">Tiada Aset</SelectItem>
-              </SelectContent>
-            </Select>
+            {isMounted ? (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua</SelectItem>
+                  <SelectItem value="complete">Aset Lengkap</SelectItem>
+                  <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
+                  <SelectItem value="no-asset">Tiada Aset</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-10 rounded-md border border-input bg-background" aria-hidden="true" />
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addOrUpdateStaff } from '@/lib/staff-db';
 import { getSessionUser } from '@/lib/auth';
+import { appendActivityLog } from '@/lib/activity-log';
+import { getStaffAssetSummary } from '@/lib/asset-status';
+import { toUiStaff } from '@/lib/staff-db';
 import prisma from '@/lib/prisma';
+
+function isStaffCompleted(row: Awaited<ReturnType<typeof prisma.staff.findUnique>>) {
+  if (!row) {
+    return false;
+  }
+  const summary = getStaffAssetSummary(toUiStaff(row));
+  return summary.totalExisting > 0 && summary.incompleteCount === 0;
+}
 
 function requireSession(req: NextRequest) {
   const user = getSessionUser(req);
@@ -61,7 +72,40 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = await req.json();
+    const targetEmail = String(data?.Emel || '').trim();
+    const before = targetEmail ? await prisma.staff.findUnique({ where: { Emel: targetEmail } }) : null;
+    const beforeComplete = isStaffCompleted(before);
     const result = await addOrUpdateStaff(data);
+
+    const latest = await prisma.staff.findUnique({ where: { Emel: targetEmail } });
+    if (latest) {
+      try {
+        await appendActivityLog({
+          timestamp: new Date().toISOString(),
+          actor: auth.user.username,
+          action: result === 'created' ? 'staff_created' : 'staff_updated',
+          targetEmail: latest.Emel,
+          targetName: latest.Nama,
+        });
+
+        const afterComplete = isStaffCompleted(latest);
+        const shouldLogCompleted = (result === 'created' && afterComplete) || (!beforeComplete && afterComplete);
+
+        if (shouldLogCompleted) {
+          await appendActivityLog({
+            timestamp: new Date().toISOString(),
+            actor: auth.user.username,
+            action: 'staff_completed',
+            targetEmail: latest.Emel,
+            targetName: latest.Nama,
+            note: 'Staff marked complete through add/update form.',
+          });
+        }
+      } catch {
+        // Logging should not break staff save flow.
+      }
+    }
+
     return NextResponse.json({ status: 'ok', result });
   } catch (err) {
     return NextResponse.json({ status: 'error', message: (err as Error).message }, { status: 500 });
@@ -84,6 +128,9 @@ export async function PATCH(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ status: 'error', message: 'Email is required.' }, { status: 400 });
     }
+
+    const before = await prisma.staff.findUnique({ where: { Emel: email } });
+    const beforeComplete = isStaffCompleted(before);
 
     if (assetType === 'PC' || assetType === 'NB' || assetType === 'Printer') {
       let data: Record<string, string> = {};
@@ -128,6 +175,35 @@ export async function PATCH(req: NextRequest) {
       }
 
       await prisma.staff.update({ where: { Emel: email }, data });
+
+      const afterAssetUpdate = await prisma.staff.findUnique({ where: { Emel: email } });
+      if (afterAssetUpdate) {
+        const afterComplete = isStaffCompleted(afterAssetUpdate);
+        try {
+          await appendActivityLog({
+            timestamp: new Date().toISOString(),
+            actor: auth.user.username,
+            action: 'staff_updated',
+            targetEmail: afterAssetUpdate.Emel,
+            targetName: afterAssetUpdate.Nama,
+            note: `Updated ${assetType} asset details.`,
+          });
+
+          if (!beforeComplete && afterComplete) {
+            await appendActivityLog({
+              timestamp: new Date().toISOString(),
+              actor: auth.user.username,
+              action: 'staff_completed',
+              targetEmail: afterAssetUpdate.Emel,
+              targetName: afterAssetUpdate.Nama,
+              note: 'Staff asset status changed to complete.',
+            });
+          }
+        } catch {
+          // Logging should not block staff update flow.
+        }
+      }
+
       return NextResponse.json({ status: 'ok' });
     }
 
@@ -151,6 +227,34 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    const afterProfileUpdate = await prisma.staff.findUnique({ where: { Emel: email } });
+    if (afterProfileUpdate) {
+      const afterComplete = isStaffCompleted(afterProfileUpdate);
+      try {
+        await appendActivityLog({
+          timestamp: new Date().toISOString(),
+          actor: auth.user.username,
+          action: 'staff_updated',
+          targetEmail: afterProfileUpdate.Emel,
+          targetName: afterProfileUpdate.Nama,
+          note: 'Updated staff profile details.',
+        });
+
+        if (!beforeComplete && afterComplete) {
+          await appendActivityLog({
+            timestamp: new Date().toISOString(),
+            actor: auth.user.username,
+            action: 'staff_completed',
+            targetEmail: afterProfileUpdate.Emel,
+            targetName: afterProfileUpdate.Nama,
+            note: 'Staff asset status changed to complete.',
+          });
+        }
+      } catch {
+        // Logging should not block staff update flow.
+      }
+    }
+
     return NextResponse.json({ status: 'ok', profile: updated });
   } catch (err) {
     return NextResponse.json({ status: 'error', message: (err as Error).message }, { status: 500 });
@@ -171,7 +275,23 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ status: 'error', message: 'Email is required.' }, { status: 400 });
     }
 
+    const existing = await prisma.staff.findUnique({ where: { Emel: email } });
     await prisma.staff.delete({ where: { Emel: email } });
+
+    if (existing) {
+      try {
+        await appendActivityLog({
+          timestamp: new Date().toISOString(),
+          actor: auth.user.username,
+          action: 'staff_deleted',
+          targetEmail: existing.Emel,
+          targetName: existing.Nama,
+        });
+      } catch {
+        // Logging should not block staff delete flow.
+      }
+    }
+
     return NextResponse.json({ status: 'ok' });
   } catch (err) {
     return NextResponse.json({ status: 'error', message: (err as Error).message }, { status: 500 });

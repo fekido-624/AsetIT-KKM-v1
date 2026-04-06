@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Building, Database, LogOut, Shield, Users } from 'lucide-react';
+import { Activity, Building, Database, LogOut, Shield, Users } from 'lucide-react';
 import { useSessionUser } from '@/hooks/use-session-user';
 
 export default function DashboardLayoutClient({
@@ -72,6 +72,16 @@ export default function DashboardLayoutClient({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => router.push('/dashboard/activity-log')}
+                isActive={pathname === '/dashboard/activity-log'}
+                tooltip={{ children: 'Log Aktiviti' }}
+              >
+                <Activity />
+                <span>Log Aktiviti</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             {user?.role === 'admin' ? (
               <SidebarMenuItem>
                 <SidebarMenuButton
