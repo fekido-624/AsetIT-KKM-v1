@@ -58,6 +58,7 @@ type EditableAsset = 'PC' | 'NB' | 'Printer';
 type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'Wing' | 'StatusPerjawatan'>;
 
 const AVATAR_CROP_SIZE = 320;
+const AVATAR_EXPORT_SIZE = 512;
 const AVATAR_MIN_ZOOM = 1;
 const AVATAR_MAX_ZOOM = 3;
 
@@ -233,8 +234,8 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
     });
 
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
+    canvas.width = AVATAR_EXPORT_SIZE;
+    canvas.height = AVATAR_EXPORT_SIZE;
 
     const context = canvas.getContext('2d');
     if (!context) {
@@ -262,7 +263,7 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
 
     const mimeType = avatarDraftType === 'image/webp' ? 'image/webp' : 'image/jpeg';
     const extension = mimeType === 'image/webp' ? 'webp' : 'jpg';
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, 0.92));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, 0.82));
     if (!blob) {
       throw new Error('Gagal hasilkan fail gambar selepas crop.');
     }
