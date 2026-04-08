@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Staff } from '@/lib/types';
 import { resolveAvatarSrc } from '@/lib/avatar-utils';
@@ -18,12 +18,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useSessionUser } from '@/hooks/use-session-user';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
-import { ArrowLeft, Briefcase, Building, Camera, HardDrive, Laptop, Mail, MapPin, Pencil, Printer, Save, Upload, User } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building, Camera, HardDrive, Laptop, Mail, MapPin, Pencil, Printer, Save, Upload, User, X } from 'lucide-react';
 
 const CAWANGAN_OPTIONS = [
   'ARAC',
@@ -56,6 +57,38 @@ interface StaffDetailClientProps {
 type EditableAsset = 'PC' | 'NB' | 'Printer';
 type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'Wing' | 'StatusPerjawatan'>;
 
+const AVATAR_CROP_SIZE = 320;
+const AVATAR_MIN_ZOOM = 1;
+const AVATAR_MAX_ZOOM = 3;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getCoverScale(width: number, height: number) {
+  if (!width || !height) {
+    return 1;
+  }
+  return Math.max(AVATAR_CROP_SIZE / width, AVATAR_CROP_SIZE / height);
+}
+
+function clampAvatarOffset(
+  offset: { x: number; y: number },
+  imageSize: { width: number; height: number },
+  zoom: number
+) {
+  const baseScale = getCoverScale(imageSize.width, imageSize.height);
+  const scaledWidth = imageSize.width * baseScale * zoom;
+  const scaledHeight = imageSize.height * baseScale * zoom;
+  const maxOffsetX = Math.max(0, (scaledWidth - AVATAR_CROP_SIZE) / 2);
+  const maxOffsetY = Math.max(0, (scaledHeight - AVATAR_CROP_SIZE) / 2);
+
+  return {
+    x: clamp(offset.x, -maxOffsetX, maxOffsetX),
+    y: clamp(offset.y, -maxOffsetY, maxOffsetY),
+  };
+}
+
 export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: StaffDetailClientProps) {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff>(initialStaff);
@@ -74,6 +107,13 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [avatarDraftSrc, setAvatarDraftSrc] = useState<string | null>(null);
+  const [avatarDraftName, setAvatarDraftName] = useState('');
+  const [avatarDraftType, setAvatarDraftType] = useState('image/png');
+  const [avatarDraftSize, setAvatarDraftSize] = useState({ width: 0, height: 0 });
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffset, setAvatarOffset] = useState({ x: 0, y: 0 });
+  const avatarDragRef = useRef<{ pointerId: number; startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null);
   const [isDeletingStaff, setIsDeletingStaff] = useState(false);
   const [isEditing, setIsEditing] = useState<EditableAsset | null>(null);
   const { user } = useSessionUser();
@@ -125,8 +165,153 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
 
   const avatarSrc = resolveAvatarSrc(staff.Avatar);
 
+  useEffect(() => {
+    return () => {
+      if (avatarDraftSrc) {
+        window.URL.revokeObjectURL(avatarDraftSrc);
+      }
+    };
+  }, [avatarDraftSrc]);
+
+  const resetAvatarDraft = () => {
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+    setAvatarDraftSize({ width: 0, height: 0 });
+    setAvatarDraftName('');
+    setAvatarDraftType('image/png');
+    setAvatarDraftSrc((prev) => {
+      if (prev) {
+        window.URL.revokeObjectURL(prev);
+      }
+      return null;
+    });
+  };
+
   const handleChooseAvatar = () => {
     fileInputRef.current?.click();
+  };
+
+  const prepareAvatarDraft = async (file: File) => {
+    const objectUrl = window.URL.createObjectURL(file);
+
+    try {
+      const image = new window.Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('Gagal baca gambar yang dipilih.'));
+        image.src = objectUrl;
+      });
+
+      setAvatarDraftSrc((prev) => {
+        if (prev) {
+          window.URL.revokeObjectURL(prev);
+        }
+        return objectUrl;
+      });
+      setAvatarDraftName(file.name || 'avatar.png');
+      setAvatarDraftType(file.type || 'image/png');
+      setAvatarDraftSize({ width: image.naturalWidth, height: image.naturalHeight });
+      setAvatarZoom(1);
+      setAvatarOffset({ x: 0, y: 0 });
+      setIsAvatarDialogOpen(true);
+    } catch (error) {
+      window.URL.revokeObjectURL(objectUrl);
+      throw error;
+    }
+  };
+
+  const buildCroppedAvatarFile = async () => {
+    if (!avatarDraftSrc || !avatarDraftSize.width || !avatarDraftSize.height) {
+      throw new Error('Tiada gambar untuk dicrop.');
+    }
+
+    const image = new window.Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Gagal proses gambar untuk crop.'));
+      image.src = avatarDraftSrc;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Canvas tidak tersedia untuk crop gambar.');
+    }
+
+    const baseScale = getCoverScale(avatarDraftSize.width, avatarDraftSize.height);
+    const effectiveScale = baseScale * avatarZoom;
+    const sourceWidth = AVATAR_CROP_SIZE / effectiveScale;
+    const sourceHeight = AVATAR_CROP_SIZE / effectiveScale;
+    const sourceX = avatarDraftSize.width / 2 - sourceWidth / 2 - avatarOffset.x / effectiveScale;
+    const sourceY = avatarDraftSize.height / 2 - sourceHeight / 2 - avatarOffset.y / effectiveScale;
+
+    context.drawImage(
+      image,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    const mimeType = avatarDraftType === 'image/webp' ? 'image/webp' : 'image/jpeg';
+    const extension = mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mimeType, 0.92));
+    if (!blob) {
+      throw new Error('Gagal hasilkan fail gambar selepas crop.');
+    }
+
+    const safeName = avatarDraftName.replace(/\.[^.]+$/, '') || 'avatar';
+    return new File([blob], `${safeName}-cropped.${extension}`, { type: mimeType });
+  };
+
+  const handleAvatarPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!avatarDraftSrc) {
+      return;
+    }
+
+    avatarDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: avatarOffset.x,
+      startOffsetY: avatarOffset.y,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleAvatarPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!avatarDragRef.current || avatarDragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - avatarDragRef.current.startX;
+    const deltaY = event.clientY - avatarDragRef.current.startY;
+    setAvatarOffset(
+      clampAvatarOffset(
+        {
+          x: avatarDragRef.current.startOffsetX + deltaX,
+          y: avatarDragRef.current.startOffsetY + deltaY,
+        },
+        avatarDraftSize,
+        avatarZoom
+      )
+    );
+  };
+
+  const handleAvatarPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!avatarDragRef.current || avatarDragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    avatarDragRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
   const handleProfileInputChange = (field: keyof Staff, value: string) => {
@@ -201,11 +386,26 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       return;
     }
 
+    try {
+      await prepareAvatarDraft(file);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Gambar tidak dapat dibuka',
+        description: (error as Error).message || 'Tidak dapat sediakan gambar untuk crop.',
+      });
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const handleUploadCroppedAvatar = async () => {
     setIsSavingAvatar(true);
     try {
+      const croppedFile = await buildCroppedAvatarFile();
       const payload = new FormData();
       payload.append('email', staff.Emel);
-      payload.append('file', file);
+      payload.append('file', croppedFile);
 
       const res = await fetch('/api/staff/avatar', {
         method: 'POST',
@@ -219,6 +419,7 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
 
       setStaff((prev) => ({ ...prev, Avatar: String(body.avatar || prev.Avatar) }));
       setIsAvatarDialogOpen(false);
+      resetAvatarDraft();
       toast({
         title: 'Avatar Updated',
         description: 'Gambar staf berjaya diganti.',
@@ -230,7 +431,6 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
         description: (error as Error).message || 'Tidak dapat simpan avatar staf.',
       });
     } finally {
-      event.target.value = '';
       setIsSavingAvatar(false);
     }
   };
@@ -430,7 +630,15 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start gap-6">
-            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+            <Dialog
+              open={isAvatarDialogOpen}
+              onOpenChange={(open) => {
+                setIsAvatarDialogOpen(open);
+                if (!open && !isSavingAvatar) {
+                  resetAvatarDraft();
+                }
+              }}
+            >
               <DialogTrigger asChild>
                 <button
                   type="button"
@@ -451,39 +659,106 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
               <DialogContent className="max-w-2xl overflow-hidden border-primary/10 p-0">
                 <div className="bg-gradient-to-br from-primary/10 via-background to-muted/70 p-6 sm:p-8">
                   <DialogHeader className="mb-4 pr-8">
-                    <DialogTitle>Gambar Staf</DialogTitle>
+                    <DialogTitle>{avatarDraftSrc ? 'Laraskan Crop Gambar' : 'Gambar Staf'}</DialogTitle>
                     <DialogDescription>
-                      Preview gambar untuk {staff.Nama}. Klik butang di bawah untuk ganti gambar jika perlu.
+                      {avatarDraftSrc
+                        ? 'Drag gambar dalam frame bulat dan laras zoom sebelum upload.'
+                        : `Preview gambar untuk ${staff.Nama}. Klik butang di bawah untuk ganti gambar jika perlu.`}
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="rounded-[28px] border border-border/60 bg-background/80 p-4 shadow-2xl backdrop-blur-sm">
-                    <div className="flex aspect-square max-h-[70vh] items-center justify-center overflow-hidden rounded-[24px] bg-muted/50">
-                      {avatarSrc ? (
-                        <img
-                          src={avatarSrc}
-                          alt={staff.Nama}
-                          className="h-full w-full object-contain transition-transform duration-300 ease-out"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-7xl font-semibold text-muted-foreground">
-                          {staff.Nama.charAt(0)}
+                    {avatarDraftSrc ? (
+                      <div className="space-y-5">
+                        <div className="mx-auto flex w-full max-w-[360px] justify-center">
+                          <div
+                            className="relative flex h-[320px] w-[320px] touch-none items-center justify-center overflow-hidden rounded-full border-[6px] border-primary/70 bg-muted shadow-xl"
+                            onPointerDown={handleAvatarPointerDown}
+                            onPointerMove={handleAvatarPointerMove}
+                            onPointerUp={handleAvatarPointerEnd}
+                            onPointerCancel={handleAvatarPointerEnd}
+                          >
+                            <img
+                              src={avatarDraftSrc}
+                              alt={`Crop ${staff.Nama}`}
+                              className="max-w-none select-none"
+                              draggable={false}
+                              style={{
+                                width: avatarDraftSize.width
+                                  ? `${avatarDraftSize.width * getCoverScale(avatarDraftSize.width, avatarDraftSize.height) * avatarZoom}px`
+                                  : undefined,
+                                height: avatarDraftSize.height
+                                  ? `${avatarDraftSize.height * getCoverScale(avatarDraftSize.width, avatarDraftSize.height) * avatarZoom}px`
+                                  : undefined,
+                                transform: `translate(${avatarOffset.x}px, ${avatarOffset.y}px)`,
+                              }}
+                            />
+                            <div className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-background/70" />
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {canManageStaff ? (
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <Button type="button" onClick={handleChooseAvatar} disabled={isSavingAvatar}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {isSavingAvatar ? 'Uploading...' : 'Replace Image'}
-                      </Button>
-                      <p className="text-xs text-muted-foreground">
-                        Format dibenarkan: jpg, jpeg, png, webp.
-                      </p>
-                    </div>
-                  ) : null}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <span>Zoom</span>
+                            <span>{avatarZoom.toFixed(1)}x</span>
+                          </div>
+                          <Slider
+                            value={[avatarZoom]}
+                            min={AVATAR_MIN_ZOOM}
+                            max={AVATAR_MAX_ZOOM}
+                            step={0.05}
+                            onValueChange={(value) => {
+                              const nextZoom = value[0] || 1;
+                              setAvatarZoom(nextZoom);
+                              setAvatarOffset((prev) => clampAvatarOffset(prev, avatarDraftSize, nextZoom));
+                            }}
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Button type="button" onClick={handleUploadCroppedAvatar} disabled={isSavingAvatar}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isSavingAvatar ? 'Uploading...' : 'Simpan Gambar'}
+                          </Button>
+                          <Button type="button" variant="outline" onClick={handleChooseAvatar} disabled={isSavingAvatar}>
+                            Pilih Gambar Lain
+                          </Button>
+                          <Button type="button" variant="ghost" onClick={resetAvatarDraft} disabled={isSavingAvatar}>
+                            <X className="mr-2 h-4 w-4" />
+                            Batal Crop
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex aspect-square max-h-[70vh] items-center justify-center overflow-hidden rounded-[24px] bg-muted/50">
+                          {avatarSrc ? (
+                            <img
+                              src={avatarSrc}
+                              alt={staff.Nama}
+                              className="h-full w-full object-contain transition-transform duration-300 ease-out"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-7xl font-semibold text-muted-foreground">
+                              {staff.Nama.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+
+                        {canManageStaff ? (
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            <Button type="button" onClick={handleChooseAvatar} disabled={isSavingAvatar}>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Replace Image
+                            </Button>
+                            <p className="text-xs text-muted-foreground">
+                              Format dibenarkan: jpg, jpeg, png, webp.
+                            </p>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
