@@ -22,6 +22,26 @@ import { AlertTriangle, Download, FileSpreadsheet, Trash2, Upload } from "lucide
 
 const CLEAR_DATA_KEYWORD = "PADAM SEMUA DATA STAF";
 
+function downloadBackupFile(base64Data: string, fileName: string) {
+  const binaryString = window.atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i += 1) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const blob = new Blob([bytes], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
 export default function ManageDataPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -52,9 +72,17 @@ export default function ManageDataPage() {
         throw new Error(String(body?.message || "Gagal clear data staff."));
       }
 
+      const backupFile = String(body?.backupFile || "staff-backup-before-clear.xlsx");
+      const backupFileBase64 = String(body?.backupFileBase64 || "");
+      if (!backupFileBase64) {
+        throw new Error("Backup fail tidak diterima. Proses clear data dibatalkan.");
+      }
+
+      downloadBackupFile(backupFileBase64, backupFile);
+
       toast({
         title: "Clear data berjaya",
-        description: `Padam ${body?.deletedStaffCount || 0} rekod staff. Akaun user kekal.`,
+        description: `Backup dimuat turun (${backupFile}). Padam ${body?.deletedStaffCount || 0} rekod staff. Akaun user kekal.`,
       });
       setConfirmationKeyword("");
       setIsDialogOpen(false);
@@ -123,7 +151,7 @@ export default function ManageDataPage() {
               <CardTitle>Clear Data Staff</CardTitle>
             </div>
             <CardDescription>
-              Padam semua data staff dan rekod berkaitan. Akaun user login tidak dipadam.
+              Padam semua data staff dan rekod berkaitan. Akaun user login tidak dipadam. Sistem akan auto export backup XLSX ke download dahulu sebelum padam.
             </CardDescription>
           </CardHeader>
           <CardContent>

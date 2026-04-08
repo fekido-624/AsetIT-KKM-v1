@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import { unlink, writeFile } from 'fs/promises';
 import path from 'path';
+import * as XLSX from 'xlsx';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
@@ -60,9 +61,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Kata kunci pengesahan tidak tepat.' }, { status: 400 });
     }
 
-    const staffRows = await prisma.staff.findMany({
-      select: { Avatar: true },
-    });
+    const staffRows = await prisma.staff.findMany({ orderBy: { Bil: 'asc' } });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFileName = `staff-backup-before-clear-${timestamp}.xlsx`;
+
+    const exportRows = staffRows.map((r) => ({
+      Bil: r.Bil,
+      Nama: r.Nama,
+      Jawatan: r.Jawatan,
+      Gred: r.Gred,
+      Emel: r.Emel,
+      'Cawangan / Bahagian / Unit': r.Cawangan,
+      Wing: r.Wing,
+      'Status Perjawatan': r.StatusPerjawatan,
+      'Bilangan PC dibekalkan': r.PC_Bilangan,
+      'Jenis Perolehan (PC)': r.PC_JenisPerolehan,
+      'Nama Projek (PC)': r.PC_NamaProjek,
+      'Tahun Perolehan (PC)': r.PC_TahunPerolehan,
+      'No Pendaftaran (Kew PA) PC': r.PC_NoPendaftaran,
+      'Kod Sewaan / Peyelenggaraan (PC)': r.PC_KodSewaan,
+      'No. Siri PC': r.PC_NoSiri,
+      'Catatan (PC)': r.PC_Catatan,
+      'Bilangan NB dibekalkan': r.NB_Bilangan,
+      'Jenis Perolehan (NB)': r.NB_JenisPerolehan,
+      'Nama Projek (NB)': r.NB_NamaProjek,
+      'Tahun Perolehan (NB)': r.NB_TahunPerolehan,
+      'No Pendaftaran (Kew PA) NB': r.NB_NoPendaftaran,
+      'Kod Sewaan / Peyelenggaraan (NB)': r.NB_KodSewaan,
+      'No. Siri NB': r.NB_NoSiri,
+      'Catatan (NB)': r.NB_Catatan,
+      'Bilangan Printer dibekalkan': r.Printer_Bilangan,
+      'Jenis Perolehan (Printer)': r.Printer_JenisPerolehan,
+      'Nama Projek (Printer)': r.Printer_NamaProjek,
+      'Tahun Perolehan (Printer)': r.Printer_TahunPerolehan,
+      'No Pendaftaran (Kew PA) Printer': r.Printer_NoPendaftaran,
+      'Kod Sewaan / Peyelenggaraan (Printer)': r.Printer_KodSewaan,
+      'No. Siri Printer': r.Printer_NoSiri,
+      'Jenama (Printer)': r.Printer_Jenama,
+      'Jenis (Printer)': r.Printer_Jenis,
+      'Kod Ink / Toner': r.Printer_KodInk,
+      'Catatan (Printer)': r.Printer_Catatan,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff');
+    const backupBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const backupFileBase64 = Buffer.from(backupBuffer).toString('base64');
+
+    // Strict process: if backup fails, clear-data is aborted.
+    if (!backupFileBase64) {
+      throw new Error('Backup XLSX gagal dijana. Proses clear data dibatalkan.');
+    }
 
     const uploadDir = path.join(process.cwd(), 'public', 'staff-images');
     const avatarFilesToDelete = Array.from(
@@ -90,6 +141,8 @@ export async function POST(req: NextRequest) {
       deletedStaffCount: deleted.count,
       deletedAvatarFiles: avatarFilesToDelete.length,
       usersPreserved: true,
+      backupFile: backupFileName,
+      backupFileBase64,
     });
   } catch (error) {
     return NextResponse.json(
