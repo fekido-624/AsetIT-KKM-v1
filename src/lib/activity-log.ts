@@ -67,6 +67,17 @@ async function readAllActivityLogs(): Promise<ActivityLogEntry[]> {
   }
 }
 
+function getLocalDayRangeForDate(dateStr: string) {
+  const date = new Date(`${dateStr}T00:00:00`);
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  return { start, end };
+}
+
 export async function getTodayActivitySummary(actor: string, limit = 150): Promise<ActivitySummary> {
   const logs = await readAllActivityLogs();
   const { start, end } = getLocalDayRange();
@@ -92,6 +103,36 @@ export async function getTodayActivitySummary(actor: string, limit = 150): Promi
     createdCount: todayLogs.filter((e) => e.action === 'staff_created').length,
     updatedCount: todayLogs.filter((e) => e.action === 'staff_updated').length,
     deletedCount: todayLogs.filter((e) => e.action === 'staff_deleted').length,
+    completedCount: completedTargets.size,
+    entries: visibleEntries,
+  };
+}
+
+export async function getActivitySummaryByDate(actor: string, dateStr: string, limit = 150): Promise<ActivitySummary> {
+  const logs = await readAllActivityLogs();
+  const { start, end } = getLocalDayRangeForDate(dateStr);
+
+  const filteredLogs = logs
+    .filter((entry) => {
+      if (entry.actor !== actor) {
+        return false;
+      }
+
+      const date = new Date(entry.timestamp);
+      return date >= start && date < end;
+    })
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  const visibleEntries = filteredLogs.slice(0, limit);
+  const completedTargets = new Set(filteredLogs.filter((e) => e.action === 'staff_completed').map((e) => e.targetEmail));
+
+  return {
+    actor,
+    date: dateStr,
+    totalActions: filteredLogs.length,
+    createdCount: filteredLogs.filter((e) => e.action === 'staff_created').length,
+    updatedCount: filteredLogs.filter((e) => e.action === 'staff_updated').length,
+    deletedCount: filteredLogs.filter((e) => e.action === 'staff_deleted').length,
     completedCount: completedTargets.size,
     entries: visibleEntries,
   };

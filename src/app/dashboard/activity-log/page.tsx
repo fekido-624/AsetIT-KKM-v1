@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, CheckCircle2, Pencil, RefreshCw, Trash2, UserPlus } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronLeft, ChevronRight, Pencil, RefreshCw, Trash2, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { ActivityLogAction } from '@/lib/activity-log';
 
@@ -45,8 +46,12 @@ export default function ActivityLogPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  });
 
-  const loadSummary = async (refresh = false) => {
+  const loadSummary = async (dateStr: string, refresh = false) => {
     if (refresh) {
       setIsRefreshing(true);
     } else {
@@ -54,10 +59,18 @@ export default function ActivityLogPage() {
     }
 
     try {
-      const res = await fetch('/api/activity-log/today', { cache: 'no-store' });
+      let res;
+      // If date is today, use the today endpoint
+      const today = new Date().toISOString().slice(0, 10);
+      if (dateStr === today) {
+        res = await fetch('/api/activity-log/today', { cache: 'no-store' });
+      } else {
+        res = await fetch(`/api/activity-log/by-date?date=${dateStr}`, { cache: 'no-store' });
+      }
+
       const body = await res.json();
       if (!res.ok || !body?.ok) {
-        throw new Error(String(body?.message || 'Gagal ambil log aktiviti hari ini.'));
+        throw new Error(String(body?.message || 'Gagal ambil log aktiviti.'));
       }
       setSummary(body.summary);
     } catch (error) {
@@ -73,8 +86,25 @@ export default function ActivityLogPage() {
   };
 
   useEffect(() => {
-    loadSummary(false);
-  }, []);
+    loadSummary(selectedDate, false);
+  }, [selectedDate]);
+
+  const handlePreviousDay = () => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() - 1);
+    setSelectedDate(date.toISOString().slice(0, 10));
+  };
+
+  const handleNextDay = () => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + 1);
+    setSelectedDate(date.toISOString().slice(0, 10));
+  };
+
+  const handleToday = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    setSelectedDate(today);
+  };
 
   const statCards = useMemo(() => {
     return [
@@ -109,16 +139,56 @@ export default function ActivityLogPage() {
             <div className="flex items-center gap-3">
               <Activity className="h-8 w-8 text-primary" />
               <div>
-                <CardTitle className="text-3xl font-headline">Log Aktiviti Hari Ini</CardTitle>
+                <CardTitle className="text-3xl font-headline">
+                  Log Aktiviti {selectedDate === new Date().toISOString().slice(0, 10) ? 'Hari Ini' : 'Hari Terpilih'}
+                </CardTitle>
                 <CardDescription>
-                  Rekod tindakan anda hari ini dan ringkasan berapa staff telah disiapkan.
+                  Rekod tindakan anda dan ringkasan berapa staff telah disiapkan.
                 </CardDescription>
               </div>
             </div>
-            <Button variant="outline" onClick={() => loadSummary(true)} disabled={isRefreshing || isLoading}>
+            <Button variant="outline" onClick={() => loadSummary(selectedDate, true)} disabled={isRefreshing || isLoading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousDay}
+                  disabled={isLoading || isRefreshing}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  disabled={isLoading || isRefreshing}
+                  className="w-40"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextDay}
+                  disabled={isLoading || isRefreshing}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToday}
+                disabled={selectedDate === new Date().toISOString().slice(0, 10) || isLoading || isRefreshing}
+              >
+                Hari Ini
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
