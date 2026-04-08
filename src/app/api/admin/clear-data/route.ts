@@ -1,9 +1,10 @@
 import { timingSafeEqual } from 'crypto';
-import { unlink, writeFile } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
+import { archiveCurrentActivityLog } from '@/lib/activity-log';
 import prisma from '@/lib/prisma';
 
 const CLEAR_DATA_KEYWORD = String(process.env.CLEAR_DATA_KEYWORD || 'PADAM SEMUA DATA STAF').trim();
@@ -126,8 +127,7 @@ export async function POST(req: NextRequest) {
 
     const deleted = await prisma.staff.deleteMany();
 
-    const activityLogPath = path.join(process.cwd(), 'data', 'activity-log.jsonl');
-    await writeFile(activityLogPath, '', 'utf8').catch(() => undefined);
+    const archivedLogMeta = await archiveCurrentActivityLog(auth.user.username);
 
     await Promise.all(
       avatarFilesToDelete.map(async (fileName) => {
@@ -143,6 +143,8 @@ export async function POST(req: NextRequest) {
       usersPreserved: true,
       backupFile: backupFileName,
       backupFileBase64,
+      archivedLogFile: archivedLogMeta?.fileName || null,
+      archivedLogCount: archivedLogMeta?.archivedCount || 0,
     });
   } catch (error) {
     return NextResponse.json(

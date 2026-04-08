@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { ActivityLogAction } from '@/lib/activity-log';
 
@@ -46,12 +47,42 @@ export default function ActivityLogPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
+  const [logSource, setLogSource] = useState<'live' | 'archive'>('live');
+  const [archiveDates, setArchiveDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().slice(0, 10);
   });
+  const [selectedArchiveDate, setSelectedArchiveDate] = useState('');
 
-  const loadSummary = async (dateStr: string, refresh = false) => {
+  const loadArchiveDates = async () => {
+    try {
+      const res = await fetch('/api/activity-log/archive-dates', { cache: 'no-store' });
+      const body = await res.json();
+      if (!res.ok || !body?.ok) {
+        throw new Error(String(body?.message || 'Gagal ambil senarai tarikh archive.'));
+      }
+
+      const dates = Array.isArray(body?.dates) ? body.dates : [];
+      setArchiveDates(dates);
+      setSelectedArchiveDate((prev) => {
+        if (prev && dates.includes(prev)) {
+          return prev;
+        }
+        return dates[0] || '';
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Archive tidak dapat dimuatkan',
+        description: (error as Error).message,
+      });
+      setArchiveDates([]);
+      setSelectedArchiveDate('');
+    }
+  };
+
+  const loadSummary = async (dateStr: string, source: 'live' | 'archive', refresh = false) => {
     if (refresh) {
       setIsRefreshing(true);
     } else {
@@ -60,12 +91,19 @@ export default function ActivityLogPage() {
 
     try {
       let res;
-      // If date is today, use the today endpoint
-      const today = new Date().toISOString().slice(0, 10);
-      if (dateStr === today) {
-        res = await fetch('/api/activity-log/today', { cache: 'no-store' });
+      if (source === 'archive') {
+        if (!dateStr) {
+          setSummary(null);
+          return;
+        }
+        res = await fetch(`/api/activity-log/archive-by-date?date=${dateStr}`, { cache: 'no-store' });
       } else {
-        res = await fetch(`/api/activity-log/by-date?date=${dateStr}`, { cache: 'no-store' });
+        const today = new Date().toISOString().slice(0, 10);
+        if (dateStr === today) {
+          res = await fetch('/api/activity-log/today', { cache: 'no-store' });
+        } else {
+          res = await fetch(`/api/activity-log/by-date?date=${dateStr}`, { cache: 'no-store' });
+        }
       }
 
       const body = await res.json();
@@ -86,8 +124,18 @@ export default function ActivityLogPage() {
   };
 
   useEffect(() => {
-    loadSummary(selectedDate, false);
-  }, [selectedDate]);
+    if (logSource === 'archive') {
+      loadArchiveDates();
+    }
+  }, [logSource]);
+
+  useEffect(() => {
+    if (logSource === 'archive') {
+      loadSummary(selectedArchiveDate, 'archive', false);
+      return;
+    }
+    loadSummary(selectedDate, 'live', false);
+  }, [selectedDate, selectedArchiveDate, logSource]);
 
   const handlePreviousDay = () => {
     const date = new Date(selectedDate);
@@ -140,65 +188,112 @@ export default function ActivityLogPage() {
               <Activity className="h-8 w-8 text-primary" />
               <div>
                 <CardTitle className="text-3xl font-headline">
-                  Log Aktiviti {selectedDate === new Date().toISOString().slice(0, 10) ? 'Hari Ini' : 'Hari Terpilih'}
+                  Log Aktiviti {logSource === 'archive' ? 'Archive' : selectedDate === new Date().toISOString().slice(0, 10) ? 'Hari Ini' : 'Hari Terpilih'}
                 </CardTitle>
                 <CardDescription>
                   Rekod tindakan anda dan ringkasan berapa staff telah disiapkan.
                 </CardDescription>
               </div>
             </div>
-            <Button variant="outline" onClick={() => loadSummary(selectedDate, true)} disabled={isRefreshing || isLoading}>
+            <Button
+              variant="outline"
+              onClick={() => loadSummary(logSource === 'archive' ? selectedArchiveDate : selectedDate, logSource, true)}
+              disabled={isRefreshing || isLoading}
+            >
               <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
 
           <div className="mt-4 space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousDay}
-                  disabled={isLoading || isRefreshing}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  disabled={isLoading || isRefreshing}
-                  className="w-40"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextDay}
-                  disabled={isLoading || isRefreshing}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="flex flex-wrap gap-2">
               <Button
-                variant="outline"
+                variant={logSource === 'live' ? 'default' : 'outline'}
                 size="sm"
-                onClick={handleToday}
-                disabled={selectedDate === new Date().toISOString().slice(0, 10) || isLoading || isRefreshing}
+                onClick={() => setLogSource('live')}
+                disabled={isLoading || isRefreshing}
               >
-                Hari Ini
+                Live Log
               </Button>
+              <Button
+                variant={logSource === 'archive' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setLogSource('archive')}
+                disabled={isLoading || isRefreshing}
+              >
+                Archive Log
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {logSource === 'archive' ? (
+                <div className="w-full sm:max-w-xs">
+                  <Select
+                    value={selectedArchiveDate}
+                    onValueChange={setSelectedArchiveDate}
+                    disabled={isLoading || isRefreshing || archiveDates.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={archiveDates.length ? 'Pilih tarikh archive' : 'Tiada archive lagi'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {archiveDates.map((date) => (
+                        <SelectItem key={date} value={date}>
+                          {date}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviousDay}
+                      disabled={isLoading || isRefreshing}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      disabled={isLoading || isRefreshing}
+                      className="w-40"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextDay}
+                      disabled={isLoading || isRefreshing}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToday}
+                    disabled={selectedDate === new Date().toISOString().slice(0, 10) || isLoading || isRefreshing}
+                  >
+                    Hari Ini
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           {summary ? (
             <p>
+              Sumber: <span className="font-medium text-foreground">{logSource === 'archive' ? 'Archive' : 'Live'}</span> |{' '}
               User: <span className="font-medium text-foreground">{summary.actor}</span> | Tarikh: {summary.date} |
               Jumlah Aktiviti: <span className="font-medium text-foreground"> {summary.totalActions}</span>
             </p>
           ) : (
-            <p>Sedang memuatkan ringkasan...</p>
+            <p>{logSource === 'archive' && archiveDates.length === 0 ? 'Tiada archive log direkodkan lagi.' : 'Sedang memuatkan ringkasan...'}</p>
           )}
         </CardContent>
       </Card>
