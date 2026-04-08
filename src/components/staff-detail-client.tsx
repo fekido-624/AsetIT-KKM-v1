@@ -7,6 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSessionUser } from '@/hooks/use-session-user';
 import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procurement-types';
 import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
-import { ArrowLeft, Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Pencil } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building, Camera, HardDrive, Laptop, Mail, MapPin, Pencil, Printer, Save, Upload, User } from 'lucide-react';
 
 const CAWANGAN_OPTIONS = [
   'ARAC',
@@ -65,6 +73,7 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
   const [profileSnapshot, setProfileSnapshot] = useState<ProfileSnapshot | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isDeletingStaff, setIsDeletingStaff] = useState(false);
   const [isEditing, setIsEditing] = useState<EditableAsset | null>(null);
   const { user } = useSessionUser();
@@ -209,6 +218,7 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       }
 
       setStaff((prev) => ({ ...prev, Avatar: String(body.avatar || prev.Avatar) }));
+      setIsAvatarDialogOpen(false);
       toast({
         title: 'Avatar Updated',
         description: 'Gambar staf berjaya diganti.',
@@ -420,10 +430,63 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start gap-6">
-            <Avatar className="w-24 h-24 border-4 border-primary shadow-lg">
-              <AvatarImage src={avatarSrc} alt={staff.Nama} />
-              <AvatarFallback className="text-4xl">{staff.Nama.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="group relative rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  aria-label={`Lihat gambar ${staff.Nama}`}
+                >
+                  <Avatar className="h-28 w-28 rounded-full border-[5px] border-primary/80 bg-muted shadow-xl ring-4 ring-primary/10 transition-transform duration-200 group-hover:scale-[1.03]">
+                    <AvatarImage src={avatarSrc} alt={staff.Nama} className="object-cover" />
+                    <AvatarFallback className="text-4xl">{staff.Nama.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-background/95 px-3 py-1 text-[11px] font-medium text-foreground shadow-md ring-1 ring-border">
+                    <Camera className="h-3.5 w-3.5" />
+                    Lihat
+                  </span>
+                </button>
+              </DialogTrigger>
+
+              <DialogContent className="max-w-2xl overflow-hidden border-primary/10 p-0">
+                <div className="bg-gradient-to-br from-primary/10 via-background to-muted/70 p-6 sm:p-8">
+                  <DialogHeader className="mb-4 pr-8">
+                    <DialogTitle>Gambar Staf</DialogTitle>
+                    <DialogDescription>
+                      Preview gambar untuk {staff.Nama}. Klik butang di bawah untuk ganti gambar jika perlu.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="rounded-[28px] border border-border/60 bg-background/80 p-4 shadow-2xl backdrop-blur-sm">
+                    <div className="flex aspect-square max-h-[70vh] items-center justify-center overflow-hidden rounded-[24px] bg-muted/50">
+                      {avatarSrc ? (
+                        <img
+                          src={avatarSrc}
+                          alt={staff.Nama}
+                          className="h-full w-full object-contain transition-transform duration-300 ease-out"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-7xl font-semibold text-muted-foreground">
+                          {staff.Nama.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {canManageStaff ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <Button type="button" onClick={handleChooseAvatar} disabled={isSavingAvatar}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        {isSavingAvatar ? 'Uploading...' : 'Replace Image'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Format dibenarkan: jpg, jpeg, png, webp.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              </DialogContent>
+            </Dialog>
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row justify-between items-start">
                 {canManageStaff && isEditingProfile ? (
@@ -470,24 +533,15 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
                   onChange={handleAvatarFileChange}
                   className="hidden"
                 />
-                <Button type="button" onClick={handleChooseAvatar} disabled={isSavingAvatar}>
-                  {isSavingAvatar ? 'Uploading...' : 'Edit / Replace Image'}
-                </Button>
                 <Button
                   type="button"
                   variant="destructive"
-                  className="ml-2"
                   onClick={handleDeleteStaff}
                   disabled={isDeletingStaff}
                 >
                   {isDeletingStaff ? 'Deleting...' : 'Delete Staff'}
                 </Button>
               </div> : null}
-              {canManageStaff ? (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Pilih gambar dari komputer anda (jpg, jpeg, png, webp).
-                </p>
-              ) : null}
             </div>
           </div>
         </CardHeader>
