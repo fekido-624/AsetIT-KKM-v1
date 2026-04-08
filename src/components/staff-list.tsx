@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getStaffAssetSummary } from "@/lib/asset-status";
+import { getCanonicalCawanganList, normalizeCawangan } from "@/lib/cawangan-utils";
 
 interface StaffListProps {
   staffList: Staff[];
@@ -34,6 +35,12 @@ export function StaffList({ staffList }: StaffListProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [search, setSearch] = useState(() => String(searchParams.get("q") || ""));
   const [statusFilter, setStatusFilter] = useState(() => normalizeStatus(searchParams.get("status")));
+  const [cawanganFilter, setCawanganFilter] = useState("all");
+
+  const canonicalCawanganList = useMemo(
+    () => getCanonicalCawanganList(staffList.map((s) => s.Cawangan)),
+    [staffList]
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -86,10 +93,17 @@ export function StaffList({ staffList }: StaffListProps) {
     });
   }, [search, staffList]);
 
-  const filteredStaff = useMemo(() => {
-    if (statusFilter === "all") return keywordMatchedStaff;
+  const cawanganFilteredStaff = useMemo(() => {
+    if (cawanganFilter === "all") return keywordMatchedStaff;
+    return keywordMatchedStaff.filter(
+      (staff) => normalizeCawangan(staff.Cawangan) === normalizeCawangan(cawanganFilter)
+    );
+  }, [keywordMatchedStaff, cawanganFilter]);
 
-    return keywordMatchedStaff.filter((staff) => {
+  const filteredStaff = useMemo(() => {
+    if (statusFilter === "all") return cawanganFilteredStaff;
+
+    return cawanganFilteredStaff.filter((staff) => {
       const summary = getStaffAssetSummary(staff);
       if (statusFilter === "complete") {
         return summary.totalExisting > 0 && summary.incompleteCount === 0;
@@ -102,7 +116,7 @@ export function StaffList({ staffList }: StaffListProps) {
       }
       return true;
     });
-  }, [keywordMatchedStaff, statusFilter]);
+  }, [cawanganFilteredStaff, statusFilter]);
 
   if (staffList.length === 0) {
     return (
@@ -121,9 +135,15 @@ export function StaffList({ staffList }: StaffListProps) {
             <Badge variant="secondary" className="font-medium">
               {filteredStaff.length} staf
             </Badge>
+            {cawanganFilter !== "all" && (
+              <>
+                <span>|</span>
+                <Badge variant="outline">{cawanganFilter}</Badge>
+              </>
+            )}
             {statusFilter !== "all" ? (
               <>
-                <span>untuk filter</span>
+                <span>|</span>
                 <Badge variant="outline">{STATUS_FILTER_LABELS[statusFilter]}</Badge>
                 <span>(daripada {keywordMatchedStaff.length} hasil carian)</span>
               </>
@@ -132,8 +152,8 @@ export function StaffList({ staffList }: StaffListProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
+            <div className="xl:col-span-2">
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -141,19 +161,35 @@ export function StaffList({ staffList }: StaffListProps) {
               />
             </div>
             {isMounted ? (
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua</SelectItem>
-                  <SelectItem value="complete">Aset Lengkap</SelectItem>
-                  <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
-                  <SelectItem value="no-asset">Tiada Aset</SelectItem>
-                </SelectContent>
-              </Select>
+              <>
+                <Select value={cawanganFilter} onValueChange={setCawanganFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter Cawangan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cawangan</SelectItem>
+                    {canonicalCawanganList.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="complete">Aset Lengkap</SelectItem>
+                    <SelectItem value="incomplete">Aset Tak Lengkap</SelectItem>
+                    <SelectItem value="no-asset">Tiada Aset</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
-              <div className="h-10 rounded-md border border-input bg-background" aria-hidden="true" />
+              <>
+                <div className="h-10 rounded-md border border-input bg-background" aria-hidden="true" />
+                <div className="h-10 rounded-md border border-input bg-background" aria-hidden="true" />
+              </>
             )}
           </div>
         </CardContent>
@@ -164,7 +200,7 @@ export function StaffList({ staffList }: StaffListProps) {
           <p>No matching staff found.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredStaff.map((staff) => (
               <StaffCard
                 key={staff.Emel}

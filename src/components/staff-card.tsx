@@ -54,24 +54,24 @@ export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) 
     return (
         <Card className="w-full transition-all hover:shadow-lg">
             <CardHeader>
-                <div className="flex items-start gap-4">
-                    <Avatar className="w-16 h-16 border-2 border-primary">
+                <div className="flex items-start gap-3 md:gap-4">
+                    <Avatar className="h-14 w-14 border-2 border-primary md:h-16 md:w-16">
                         <AvatarImage src={avatarSrc} alt={staff.Nama} />
                         <AvatarFallback>{staff.Nama.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                         <div className="flex justify-between items-start">
-                            <CardTitle className="text-xl font-headline">{highlightText(staff.Nama, highlightTerm)}</CardTitle>
+                            <CardTitle className="text-lg font-headline md:text-xl">{highlightText(staff.Nama, highlightTerm)}</CardTitle>
                             <Badge variant={staff.Gred.startsWith('JUSA') ? "destructive" : "secondary"}>{staff.Gred}</Badge>
                         </div>
-                        <CardDescription className="flex items-center gap-2 mt-1 text-sm">
+                        <CardDescription className="mt-1 flex items-center gap-2 text-xs md:text-sm">
                             <Briefcase className="w-4 h-4"/> {highlightText(staff.Jawatan, highlightTerm)}
                         </CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="space-y-2 text-xs text-muted-foreground md:text-sm">
                     <div className="flex flex-wrap gap-2">
                         <Badge variant="outline">Aset: {summary.totalExisting}/3</Badge>
                         <Badge variant={summary.incompleteCount === 0 ? "default" : "destructive"}>
@@ -88,7 +88,7 @@ export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) 
                         <span>{highlightText(`${staff.Cawangan} - ${staff.Wing}`, highlightTerm)}</span>
                     </div>
                     {notes.length > 0 ? (
-                        <div className="pt-1 text-xs">
+                        <div className="pt-1 text-[11px] md:text-xs">
                             {notes.map((item) => (
                                 <p key={item.label} className="truncate" title={item.value}>
                                     <span className="font-medium">{item.label}:</span> {item.value}
@@ -97,7 +97,7 @@ export function StaffCard({ staff, highlightTerm, detailHref }: StaffCardProps) 
                         </div>
                     ) : null}
                 </div>
-                 <Button asChild className="mt-4 w-full md:w-auto float-right">
+                 <Button asChild className="mt-4 w-full text-sm md:w-auto md:text-base float-right">
                     <Link href={href}>
                         View Details <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>

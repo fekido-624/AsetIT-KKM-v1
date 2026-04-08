@@ -17,6 +17,29 @@ import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procu
 import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
 import { ArrowLeft, Briefcase, Building, HardDrive, Laptop, Mail, MapPin, Printer, User, Save, Pencil } from 'lucide-react';
 
+const CAWANGAN_OPTIONS = [
+  'ARAC',
+  'Eksport',
+  'Import',
+  'Industri Domestik (CID)',
+  'Komunikasi & Kepenggunaan (K&K)',
+  'Kosong',
+  'MJMM',
+  'Makmal',
+  'PMA',
+  'PRE-MARKET APPROVAL',
+  'Pejabat DPSSC',
+  'Pejabat PDSC',
+  'Pejabat PPI',
+  'Pejabat Timbalan Ketua Pengarah Kesihatan (Keselamatan Dan Kualiti Makanan)',
+  'Pematuhan Domestik (CPD)',
+  'Pengurusan',
+  'Polisi & Pembangunan (P&P)',
+  'Standard Codex (S&C)',
+  'Surveilan',
+  'Tiada',
+] as const;
+
 interface StaffDetailClientProps {
   initialStaff: Staff;
   backHref?: string;
@@ -28,6 +51,10 @@ type ProfileSnapshot = Pick<Staff, 'Nama' | 'Jawatan' | 'Gred' | 'Cawangan' | 'W
 export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: StaffDetailClientProps) {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff>(initialStaff);
+  const cawanganSet = new Set<string>(CAWANGAN_OPTIONS);
+  const [isCustomCawangan, setIsCustomCawangan] = useState(
+    initialStaff.Cawangan !== '' && !cawanganSet.has(initialStaff.Cawangan)
+  );
   const [catatanMode, setCatatanMode] = useState<Record<EditableAsset, boolean>>({
     PC: false,
     NB: false,
@@ -42,6 +69,7 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
   const [isEditing, setIsEditing] = useState<EditableAsset | null>(null);
   const { user } = useSessionUser();
   const canManageStaff = user?.role === 'admin';
+  const cawanganSelectValue = isCustomCawangan ? 'CUSTOM' : staff.Cawangan;
   
   const { toast } = useToast();
 
@@ -145,12 +173,14 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
       Wing: staff.Wing,
       StatusPerjawatan: staff.StatusPerjawatan,
     });
+    setIsCustomCawangan(staff.Cawangan !== '' && !cawanganSet.has(staff.Cawangan));
     setIsEditingProfile(true);
   };
 
   const handleCancelEditProfile = () => {
     if (profileSnapshot) {
       setStaff((prev) => ({ ...prev, ...profileSnapshot }));
+      setIsCustomCawangan(profileSnapshot.Cawangan !== '' && !cawanganSet.has(profileSnapshot.Cawangan));
     }
     setIsEditingProfile(false);
     setProfileSnapshot(null);
@@ -464,7 +494,18 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6 border-t">
           <div className="flex items-center gap-3"><Mail className="w-5 h-5 text-primary" /><span>{staff.Emel}</span></div>
           <div className="flex items-center gap-3"><User className="w-5 h-5 text-primary" />{isEditingProfile ? <Input value={staff.StatusPerjawatan} onChange={(e) => handleProfileInputChange('StatusPerjawatan', e.target.value)} /> : <span>{staff.StatusPerjawatan}</span>}</div>
-          <div className="flex items-center gap-3"><Building className="w-5 h-5 text-primary" />{isEditingProfile ? <Input value={staff.Cawangan} onChange={(e) => handleProfileInputChange('Cawangan', e.target.value)} /> : <span>{staff.Cawangan}</span>}</div>
+          <div className="flex items-center gap-3"><Building className="w-5 h-5 text-primary" />{isEditingProfile ? <div className="w-full space-y-2"><Select value={cawanganSelectValue} onValueChange={(value) => {
+            if (value === 'CUSTOM') {
+              setIsCustomCawangan(true);
+              handleProfileInputChange('Cawangan', '');
+              return;
+            }
+            setIsCustomCawangan(false);
+            handleProfileInputChange('Cawangan', value);
+          }}><SelectTrigger><SelectValue placeholder="Pilih Cawangan" /></SelectTrigger><SelectContent>{CAWANGAN_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}<SelectItem value="CUSTOM">Lain-lain (isi sendiri)</SelectItem></SelectContent></Select>{isCustomCawangan ? <Input value={staff.Cawangan} onChange={(e) => {
+            setIsCustomCawangan(true);
+            handleProfileInputChange('Cawangan', e.target.value);
+          }} placeholder="Contoh: Unit Khas" /> : null}</div> : <span>{staff.Cawangan}</span>}</div>
           <div className="flex items-center gap-3"><MapPin className="w-5 h-5 text-primary" />{isEditingProfile ? <Input value={staff.Wing} onChange={(e) => handleProfileInputChange('Wing', e.target.value)} /> : <span>{staff.Wing}</span>}</div>
         </CardContent>
       </Card>

@@ -19,6 +19,29 @@ import { getProcurementSelectValue, PROCUREMENT_TYPE_OPTIONS } from '@/lib/procu
 import { CATATAN_OPTIONS, getCatatanSelectValue } from '@/lib/catatan-options';
 import { Loader2, UserPlus } from 'lucide-react';
 
+const CAWANGAN_OPTIONS = [
+  'ARAC',
+  'Eksport',
+  'Import',
+  'Industri Domestik (CID)',
+  'Komunikasi & Kepenggunaan (K&K)',
+  'Kosong',
+  'MJMM',
+  'Makmal',
+  'PMA',
+  'PRE-MARKET APPROVAL',
+  'Pejabat DPSSC',
+  'Pejabat PDSC',
+  'Pejabat PPI',
+  'Pejabat Timbalan Ketua Pengarah Kesihatan (Keselamatan Dan Kualiti Makanan)',
+  'Pematuhan Domestik (CPD)',
+  'Pengurusan',
+  'Polisi & Pembangunan (P&P)',
+  'Standard Codex (S&C)',
+  'Surveilan',
+  'Tiada',
+] as const;
+
 type StaffFormData = {
   Nama: string;
   Jawatan: string;
@@ -98,11 +121,14 @@ export default function AddStaffPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<StaffFormData>(initialData);
+  const [isCustomCawangan, setIsCustomCawangan] = useState(false);
   const [catatanMode, setCatatanMode] = useState<Record<'PC_Catatan' | 'NB_Catatan' | 'Printer_Catatan', boolean>>({
     PC_Catatan: false,
     NB_Catatan: false,
     Printer_Catatan: false,
   });
+  const cawanganSet = new Set<string>(CAWANGAN_OPTIONS);
+  const cawanganSelectValue = isCustomCawangan ? 'CUSTOM' : form.Cawangan;
 
   const setField = (key: keyof StaffFormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -146,6 +172,7 @@ export default function AddStaffPage() {
         description: `${form.Nama} telah disimpan dalam database.`,
       });
       setForm(initialData);
+      setIsCustomCawangan(false);
       router.push('/dashboard');
       router.refresh();
     } catch (error) {
@@ -305,7 +332,45 @@ export default function AddStaffPage() {
               {renderInput('Jawatan', 'Jawatan *', 'Contoh: Pegawai Teknologi Makanan')}
               {renderInput('Gred', 'Gred *', 'Contoh: C12')}
               {renderInput('Emel', 'Emel *', 'Contoh: ali.abu@email.com')}
-              {renderInput('Cawangan', 'Cawangan / Bahagian / Unit *')}
+
+              <div className="space-y-2">
+                <Label>Cawangan / Bahagian / Unit *</Label>
+                <Select
+                  value={cawanganSelectValue}
+                  onValueChange={(value) => {
+                    if (value === 'CUSTOM') {
+                      setIsCustomCawangan(true);
+                      setField('Cawangan', '');
+                      return;
+                    }
+                    setIsCustomCawangan(false);
+                    setField('Cawangan', value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Cawangan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAWANGAN_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="CUSTOM">Lain-lain (isi sendiri)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {isCustomCawangan ? (
+                  <Input
+                    value={form.Cawangan}
+                    onChange={(e) => {
+                      setIsCustomCawangan(true);
+                      setField('Cawangan', e.target.value);
+                    }}
+                    placeholder="Contoh: Unit Khas"
+                  />
+                ) : null}
+              </div>
 
               <div className="space-y-2">
                 <Label>Wing *</Label>

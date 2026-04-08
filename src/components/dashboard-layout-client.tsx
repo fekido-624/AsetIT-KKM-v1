@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -12,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { AppLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,12 @@ export default function DashboardLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useSessionUser();
+  const [isMounted, setIsMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -39,6 +45,10 @@ export default function DashboardLayoutClient({
     }
   };
 
+  if (!isMounted) {
+    return <div className="min-h-dvh bg-background">{children}</div>;
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -48,43 +58,50 @@ export default function DashboardLayoutClient({
             <span className="font-headline text-lg font-semibold">AsetIT KKM</span>
           </div>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
+        <SidebarContent className="py-2">
+          <SidebarMenu className="gap-1 px-2">
             <SidebarMenuItem>
               <SidebarMenuButton
+                size="lg"
                 onClick={() => router.push('/dashboard')}
                 isActive={pathname === '/dashboard'}
                 tooltip={{ children: 'All Staff' }}
+                className="h-14 text-base md:h-10 md:text-sm"
               >
-                <Users />
+                <Users className="!h-6 !w-6 md:!h-4 md:!w-4" />
                 <span>All Staff</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             {[1, 2, 3, 4].map((wing) => (
               <SidebarMenuItem key={`test-${wing}`}>
                 <SidebarMenuButton
+                  size="lg"
                   onClick={() => router.push(`/dashboard/wings/${wing}-test`)}
                   isActive={pathname === `/dashboard/wings/${wing}-test`}
                   tooltip={{ children: `Wing ${wing}` }}
+                  className="h-14 text-base md:h-10 md:text-sm"
                 >
-                  <Building />
+                  <Building className="!h-6 !w-6 md:!h-4 md:!w-4" />
                   <span>Wing {wing}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
             <SidebarMenuItem>
               <SidebarMenuButton
+                size="lg"
                 onClick={() => router.push('/dashboard/activity-log')}
                 isActive={pathname === '/dashboard/activity-log'}
                 tooltip={{ children: 'Log Aktiviti' }}
+                className="h-14 text-base md:h-10 md:text-sm"
               >
-                <Activity />
+                <Activity className="!h-6 !w-6 md:!h-4 md:!w-4" />
                 <span>Log Aktiviti</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             {user?.role === 'admin' ? (
               <SidebarMenuItem>
                 <SidebarMenuButton
+                  size="lg"
                   onClick={() => router.push('/dashboard/manage-data')}
                   isActive={
                     pathname === '/dashboard/manage-data' ||
@@ -92,8 +109,9 @@ export default function DashboardLayoutClient({
                     pathname === '/dashboard/export-data'
                   }
                   tooltip={{ children: 'Manage Data' }}
+                  className="h-14 text-base md:h-10 md:text-sm"
                 >
-                  <Database />
+                  <Database className="!h-6 !w-6 md:!h-4 md:!w-4" />
                   <span>Manage Data</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -101,11 +119,13 @@ export default function DashboardLayoutClient({
             {user?.role === 'admin' ? (
               <SidebarMenuItem>
                 <SidebarMenuButton
+                  size="lg"
                   onClick={() => router.push('/dashboard/manage-users')}
                   isActive={pathname === '/dashboard/manage-users'}
                   tooltip={{ children: 'Manage Users' }}
+                  className="h-14 text-base md:h-10 md:text-sm"
                 >
-                  <Shield />
+                  <Shield className="!h-6 !w-6 md:!h-4 md:!w-4" />
                   <span>Manage Users</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -115,16 +135,22 @@ export default function DashboardLayoutClient({
         <SidebarFooter>
           <Button
             variant="ghost"
-            className="w-full justify-start gap-2"
+            className="w-full justify-start gap-3 h-14 px-4 text-base md:h-10 md:text-sm"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-6 w-6 md:h-4 md:w-4" />
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </Button>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset>
+        <header className="flex h-12 items-center gap-2 border-b px-4 md:hidden">
+          <SidebarTrigger />
+          <span className="font-headline font-semibold">AsetIT KKM</span>
+        </header>
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }

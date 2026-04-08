@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = await req.json();
-    const targetEmail = String(data?.Emel || '').trim();
+    const targetEmail = String(data?.Emel || '').trim().toLowerCase();
     const before = targetEmail ? await prisma.staff.findUnique({ where: { Emel: targetEmail } }) : null;
     const beforeComplete = isStaffCompleted(before);
     const result = await addOrUpdateStaff(data);

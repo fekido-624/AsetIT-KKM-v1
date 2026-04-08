@@ -87,12 +87,13 @@ function toDbStaffData(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInpu
   const nb = 'NB' in data ? data.NB : undefined;
   const printer = 'Printer' in data ? data.Printer : undefined;
   const flat = data as LegacyFlatStaffInput;
+  const normalizedEmail = String(data.Emel || '').trim().toLowerCase();
 
   return {
     Nama: data.Nama,
     Jawatan: data.Jawatan,
     Gred: data.Gred,
-    Emel: data.Emel,
+    Emel: normalizedEmail,
     Cawangan: data.Cawangan,
     Wing: normalizeWingLabel(data.Wing),
     StatusPerjawatan: data.StatusPerjawatan,
@@ -206,11 +207,12 @@ export async function getStaffByEmailForUi(email: string): Promise<Staff | null>
 
 export async function addOrUpdateStaff(data: Omit<Staff, 'Bil' | 'Avatar'> | LegacyFlatStaffInput) {
   const dbData = toDbStaffData(data);
+  const normalizedEmail = String(data.Emel || '').trim().toLowerCase();
 
   // Try update first
-  const existing = await prisma.staff.findUnique({ where: { Emel: data.Emel } });
+  const existing = await prisma.staff.findUnique({ where: { Emel: normalizedEmail } });
   if (existing) {
-    await prisma.staff.update({ where: { Emel: data.Emel }, data: dbData });
+    await prisma.staff.update({ where: { Emel: normalizedEmail }, data: dbData });
     return 'updated';
   } else {
     // Find max Bil
