@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
 import { sortStaffByGradeDesc } from '@/lib/grade-order';
 import AuthGuard from '@/components/auth-guard';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,26 @@ export default function ExportDataPage() {
   const [wing, setWing] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
 
+  const saveExportForNativeApp = async (wb: XLSX.WorkBook, fileName: string) => {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const { Share } = await import('@capacitor/share');
+
+    const base64Data = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+    const result = await Filesystem.writeFile({
+      path: `Exports/${fileName}`,
+      data: base64Data,
+      directory: Directory.Documents,
+      recursive: true,
+    });
+
+    await Share.share({
+      title: 'Export Data Staff',
+      text: `Fail ${fileName} telah dijana`,
+      url: result.uri,
+      dialogTitle: 'Simpan atau kongsi fail export',
+    });
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -130,11 +151,18 @@ export default function ExportDataPage() {
 
       const label = wingOptions.find((w) => w.value === wing)?.label.replace(/\s+/g, '_') || 'All_Staff';
       const fileName = `Staff_Export_${label}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+
+      if (Capacitor.isNativePlatform()) {
+        await saveExportForNativeApp(wb, fileName);
+      } else {
+        XLSX.writeFile(wb, fileName);
+      }
 
       toast({
         title: 'Export berjaya',
-        description: `${rows.length} rekod telah diexport ke ${fileName}.`,
+        description: Capacitor.isNativePlatform()
+          ? `${rows.length} rekod siap diexport. Pilih lokasi simpan daripada paparan share.`
+          : `${rows.length} rekod telah diexport ke ${fileName}.`,
       });
     } catch (error) {
       toast({
