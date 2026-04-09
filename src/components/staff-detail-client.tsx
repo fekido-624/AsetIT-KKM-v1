@@ -62,6 +62,13 @@ const AVATAR_EXPORT_SIZE = 512;
 const AVATAR_MIN_ZOOM = 1;
 const AVATAR_MAX_ZOOM = 3;
 
+function createEmptyAsset<T extends Record<string, string>>(asset: T): T {
+  return Object.keys(asset).reduce((acc, key) => {
+    acc[key as keyof T] = '';
+    return acc;
+  }, {} as T);
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -131,6 +138,24 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
         [field]: value
       }
     }));
+  };
+
+  const handleClearAsset = (assetType: EditableAsset) => {
+    const confirmed = window.confirm(`Kosongkan semua maklumat ${assetType} untuk ${staff.Nama}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setStaff((prev) => ({
+      ...prev,
+      [assetType]: createEmptyAsset(prev[assetType]),
+    }));
+    setCatatanMode((prev) => ({ ...prev, [assetType]: false }));
+
+    toast({
+      title: 'Maklumat dikosongkan',
+      description: `Semua field ${assetType} telah dikosongkan. Tekan Save untuk simpan perubahan.`,
+    });
   };
 
   const handleSave = async (assetType: EditableAsset) => {
@@ -483,9 +508,14 @@ export function StaffDetailClient({ initialStaff, backHref = '/dashboard' }: Sta
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center gap-2">{icon} {assetType} Details</CardTitle>
             {canManageStaff && isBeingEdited ? (
-              <Button size="sm" onClick={() => handleSave(assetType)}>
-                <Save className="w-4 h-4 mr-2"/> Save
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" type="button" variant="outline" onClick={() => handleClearAsset(assetType)}>
+                  Kosongkan
+                </Button>
+                <Button size="sm" type="button" onClick={() => handleSave(assetType)}>
+                  <Save className="w-4 h-4 mr-2"/> Save
+                </Button>
+              </div>
             ) : canManageStaff ? (
               <Button size="sm" variant="outline" onClick={() => setIsEditing(assetType)}>
                 <Pencil className="w-4 h-4 mr-2"/> Edit
