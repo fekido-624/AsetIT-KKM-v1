@@ -72,17 +72,26 @@ export function StaffList({ staffList }: StaffListProps) {
         return true;
       }
 
+      // Prefix match for NoPendaftaran fields (e.g., "KKM/BKKM09/R/23" matches "KKM/BKKM09/R/23/190")
+      const noPendaftaranMatch = [
+        staff.PC?.NoPendaftaran,
+        staff.NB?.NoPendaftaran,
+        staff.Printer?.NoPendaftaran,
+      ].some((np) => np?.toLowerCase().startsWith(keyword));
+
+      if (noPendaftaranMatch) {
+        return true;
+      }
+
+      // Partial match for other fields (Nama, Emel, NoSiri, KodSewaan)
       const haystack = [
         staff.Nama,
         staff.Emel,
         staff.PC?.NoSiri,
-        staff.PC?.NoPendaftaran,
         staff.PC?.KodSewaan,
         staff.NB?.NoSiri,
-        staff.NB?.NoPendaftaran,
         staff.NB?.KodSewaan,
         staff.Printer?.NoSiri,
-        staff.Printer?.NoPendaftaran,
         staff.Printer?.KodSewaan,
       ]
         .filter(Boolean)
